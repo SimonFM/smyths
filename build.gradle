@@ -1,0 +1,75 @@
+buildscript {
+    ext{
+        kotlin_version = '1.1.0'
+        spark_version = '2.5.5'
+        spring_boot_version = '1.5.2.RELEASE'
+        fuel_version = '1.5.0'
+        klaxon_version = '0.29'
+        kotlinx_html_version = '0.6.2'
+        jsoup_version = '1.10.1'
+        json_version = '20140107'
+        kotson_version = '2.5.0'
+        javax_version = '1.0'
+        postgres_version = '9.4-1201-jdbc41'
+        postgis_jbdc_version = '2.2.0'
+        exposed_version = '0.7.6'
+        spring_transaction = '0.7.6'
+        geo_json = '1.1'
+    }
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:$spring_boot_version"
+        classpath "com.github.kittinunf.fuel:fuel:$fuel_version"
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'kotlin'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'org.springframework.boot'
+
+jar {
+    baseName = 'smyths'
+    version =  '0.1.0'
+}
+
+repositories {
+    mavenCentral()
+    maven { setUrl("https://dl.bintray.com/kotlin/exposed") }
+    maven { setUrl("https://dl.bintray.com/sdeleuze/maven/") }
+    jcenter()
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+dependencies {
+
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compile "org.jetbrains.kotlinx:kotlinx-html-jvm:$kotlinx_html_version"
+    compile "org.jetbrains.exposed:exposed:$exposed_version"
+    compile "org.jetbrains.exposed:spring-transaction:$spring_transaction"
+    compile "org.jsoup:jsoup:$jsoup_version"
+    compile "org.json:json:$json_version"
+
+    compile "org.springframework.boot:spring-boot-starter-web"
+    compile "org.springframework.boot:spring-boot-starter-data-jpa"
+    compile "org.springframework.boot:spring-boot-starter-actuator"
+    compile "org.springframework.boot:spring-boot-devtools"
+
+    compile "com.beust:klaxon:$klaxon_version"
+    compile "com.github.salomonbrys.kotson:kotson:$kotson_version"
+    compile "com.github.kittinunf.fuel:fuel:$fuel_version"
+
+    compile "org.postgresql:postgresql:$postgres_version"
+    compile "net.postgis:postgis-jdbc:$postgis_jbdc_version"
+    compile "com.github.mayconbordin:postgis-geojson:$geo_json"
+
+    testCompile "org.springframework.boot:spring-boot-starter-test"
+    testCompile "org.springframework.restdocs:spring-restdocs-mockmvc:1.1.1.RELEASE"
+}
