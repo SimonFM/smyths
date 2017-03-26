@@ -31,8 +31,9 @@ open class SmythsProductRepository : ProductRepository{
     private fun toRow(product: Product): Products.(UpdateBuilder<*>) -> Unit = {
         it[name] = product.name
         it[price] = product.price
+        it[id] = product.id
     }
 
     private fun fromRow(r: ResultRow) =
-            Product(r[Products.name], r[Products.price])//, r[Products.id])
+            Product(r[Products.name], r[Products.price], r[Products.id])//, r[Products.id])
 }

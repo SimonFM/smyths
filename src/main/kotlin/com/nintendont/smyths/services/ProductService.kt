@@ -74,7 +74,7 @@ open class ProductService {
                 categoryName = json.get("category") as String
             }
 
-            val product: Product = Product(name = productName, price = productPriceAsBigDecimal)
+            val product: Product = Product(name = productName, price = productPriceAsBigDecimal, id = productId.toLong())
             if(listing.isNotBlank()){
                 val productList: ProductList = ProductList(name = listing)
               //  product.productList = productList
@@ -86,12 +86,12 @@ open class ProductService {
                 brands.add(brand)
             }
             if(categoryName.isNotBlank()){
-               // val category: Category = Category(name = categoryName)
+                val category: Category = Category(name = categoryName)
                // product.category = category
-               // categories.add(category)
+               categories.add(category)
             }
-            products.add(product)
             productRepository.create(product)
+            products.add(product)
         }
         return products
     }
