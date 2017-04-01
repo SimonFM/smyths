@@ -1,7 +1,8 @@
-package com.nintendont.smyths.repository
+package com.nintendont.smyths.data.repository
 
 import com.nintendont.smyths.data.Products
-import com.nintendont.smyths.schema.Product
+import com.nintendont.smyths.data.interfaces.CrudRepository
+import com.nintendont.smyths.data.schema.Product
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.springframework.stereotype.Repository
@@ -9,7 +10,7 @@ import javax.transaction.Transactional
 
 interface ProductRepository: CrudRepository<Product, Long>
 
-@Repository("productRepo")
+@Repository("productRepository")
 @Transactional
 open class SmythsProductRepository : ProductRepository{
 
@@ -29,11 +30,16 @@ open class SmythsProductRepository : ProductRepository{
     }
 
     private fun toRow(product: Product): Products.(UpdateBuilder<*>) -> Unit = {
+        it[id] = product.id
+        it[smythsId] = product.smythsId
         it[name] = product.name
         it[price] = product.price
-        it[id] = product.id
+        it[categoryId] = product.categoryId
+        it[listId] = product.listTypeId
+        it[brandId] = product.brandId
     }
 
     private fun fromRow(r: ResultRow) =
-            Product(r[Products.name], r[Products.price], r[Products.id])//, r[Products.id])
+            Product( r[Products.id],r[Products.smythsId], r[Products.name],
+                     r[Products.price], r[Products.categoryId], r[Products.listId], r[Products.brandId])
 }

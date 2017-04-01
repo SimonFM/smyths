@@ -1,27 +1,33 @@
-package com.nintendont.smyths.services
+package com.nintendont.smyths.web.services
 
-import com.nintendont.smyths.data.Brand
-import com.nintendont.smyths.data.ProductList
-import com.nintendont.smyths.http.HttpHandler
-import com.nintendont.smyths.repository.ProductRepository
-import com.nintendont.smyths.repository.SmythsProductRepository
-import com.nintendont.smyths.schema.Category
-import com.nintendont.smyths.schema.Product
+import com.nintendont.smyths.utils.http.HttpHandler
+import com.nintendont.smyths.data.repository.*
+import com.nintendont.smyths.data.schema.Brand
+import com.nintendont.smyths.data.schema.Category
+import com.nintendont.smyths.data.schema.ListType
+import com.nintendont.smyths.data.schema.Product
 import com.nintendont.smyths.utils.Utils
 import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Component
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
-import javax.transaction.Transactional
+import java.util.*
 
 @Service
-open class ProductService {
+open class CatalogueService {
 
     private val httpHandler : HttpHandler = HttpHandler()
     @Autowired
     lateinit var productRepository : SmythsProductRepository
+    @Autowired
+    lateinit var brandRepository : SmythsBrandRepository
+    @Autowired
+    lateinit var listTypeRepository : SmythsListTypeRepository
+    @Autowired
+    lateinit var categoryRepository : SmythsCategoryRepository
+    @Autowired
+    lateinit var cryptoService : CryptoService
 
     fun checkProductAvailability(productId:String, storeId: String){
         val product : Pair<String, Any> = Pair("productId", productId)
@@ -40,7 +46,7 @@ open class ProductService {
 
         val products = mutableSetOf<Product>()
         val categories = mutableSetOf<Category>()
-        val productLists = mutableSetOf<ProductList>()
+        val lists = mutableSetOf<ListType>()
         val brands = mutableSetOf<Brand>()
 
         for (elem in dataProducts) {
@@ -50,7 +56,7 @@ open class ProductService {
             var productName : String = ""
             var productPriceAsString : String = ""
             var productPriceAsBigDecimal : BigDecimal = BigDecimal(0)
-            var productId : String = ""
+            var smythsProductId : String = ""
             var productBrand : String = ""
             var categoryName : String = ""
 
@@ -61,7 +67,7 @@ open class ProductService {
                 productName = json.get("name") as String
             }
             if(json.has("id")){
-                productId = json.get("id") as String
+                smythsProductId = json.get("id") as String
             }
             if(json.has("price")){
                 productPriceAsString = json.get("price") as String
@@ -73,23 +79,40 @@ open class ProductService {
             if(json.has("category")){
                 categoryName = json.get("category") as String
             }
+            val categoryId : String = UUID.randomUUID().toString()
+            val productId : String = UUID.randomUUID().toString()
+            val brandId : String = UUID.randomUUID().toString()
+            val listingId : String = UUID.randomUUID().toString()
 
-            val product: Product = Product(name = productName, price = productPriceAsBigDecimal, id = productId.toLong())
             if(listing.isNotBlank()){
-                val productList: ProductList = ProductList(name = listing)
+
+                val list: ListType = ListType(name = listing, id = listingId)
               //  product.productList = productList
-                productLists.add(productList)
+                lists.add(list)
+                listTypeRepository.create(list)
             }
             if(productBrand.isNotBlank()){
-                val brand: Brand = Brand(name = productBrand)
+
+                val brand: Brand = Brand(name = productBrand, id = brandId)
                // product.brand = brand
                 brands.add(brand)
+                brandRepository.create(brand)
             }
             if(categoryName.isNotBlank()){
-                val category: Category = Category(name = categoryName)
+
+                val category: Category = Category(name = categoryName, id = categoryId )
                // product.category = category
-               categories.add(category)
+                categories.add(category)
+                categoryRepository.create(category)
             }
+            val product: Product = Product(id = productId,
+                                           name = productName,
+                                           price = productPriceAsBigDecimal,
+                                           smythsId = smythsProductId.toLong(),
+                                           categoryId = categoryId,
+                                           listTypeId = listingId,
+                                           brandId = brandId)
+
             productRepository.create(product)
             products.add(product)
         }

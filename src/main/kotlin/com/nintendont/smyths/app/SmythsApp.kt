@@ -2,9 +2,8 @@ package com.nintendont.smyths.app
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.nintendont.smyths.repository.ProductRepository
-import com.nintendont.smyths.repository.SmythsProductRepository
-import com.nintendont.smyths.services.ProductService
+import com.nintendont.smyths.data.repository.*
+import com.nintendont.smyths.web.services.CatalogueService
 import org.jetbrains.exposed.spring.SpringTransactionManager
 import org.postgis.geojson.PostGISModule
 import org.springframework.beans.factory.annotation.Autowired
@@ -37,8 +36,12 @@ open class SmythsApp {
     open fun persistenceExceptionTranslationPostProcessor() = PersistenceExceptionTranslationPostProcessor()
 
     @Bean
-    open fun init(productRepo: ProductRepository) = CommandLineRunner {
-        productRepo.createTable()
+    open fun init(productRepository: SmythsProductRepository, listTypeRepository: SmythsListTypeRepository,
+                  categoryRepository: SmythsCategoryRepository, brandRepository: SmythsBrandRepository) = CommandLineRunner {
+        productRepository.createTable()
+        listTypeRepository.createTable()
+        categoryRepository.createTable()
+        brandRepository.createTable()
     }
     companion object {
         @JvmStatic fun main(args: Array<String>) {

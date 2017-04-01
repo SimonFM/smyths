@@ -1,4 +1,4 @@
-package com.nintendont.smyths.repository
+package com.nintendont.smyths.data.interfaces
 
 /**
  * Created by simon on 23/03/2017.

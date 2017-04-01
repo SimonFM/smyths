@@ -1,4 +1,4 @@
-package com.nintendont.smyths.http
+package com.nintendont.smyths.utils.http
 
 import com.beust.klaxon.json
 import com.github.kittinunf.fuel.Fuel
