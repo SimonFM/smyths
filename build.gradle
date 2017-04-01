@@ -15,6 +15,7 @@ buildscript {
         exposed_version = '0.7.6'
         spring_transaction = '0.7.6'
         geo_json = '1.1'
+        bouncy_castle_version = '1.56'
     }
     repositories {
         mavenCentral()
@@ -50,6 +51,7 @@ targetCompatibility = 1.8
 
 dependencies {
 
+    // Kotlin Things
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     compile "org.jetbrains.kotlinx:kotlinx-html-jvm:$kotlinx_html_version"
     compile "org.jetbrains.exposed:exposed:$exposed_version"
@@ -57,19 +59,27 @@ dependencies {
     compile "org.jsoup:jsoup:$jsoup_version"
     compile "org.json:json:$json_version"
 
+
+    // Spring Boot Things
     compile "org.springframework.boot:spring-boot-starter-web"
     compile "org.springframework.boot:spring-boot-starter-data-jpa"
     compile "org.springframework.boot:spring-boot-starter-actuator"
     compile "org.springframework.boot:spring-boot-devtools"
 
+    // Internet Things
     compile "com.beust:klaxon:$klaxon_version"
     compile "com.github.salomonbrys.kotson:kotson:$kotson_version"
     compile "com.github.kittinunf.fuel:fuel:$fuel_version"
 
+    // DB Things
     compile "org.postgresql:postgresql:$postgres_version"
     compile "net.postgis:postgis-jdbc:$postgis_jbdc_version"
     compile "com.github.mayconbordin:postgis-geojson:$geo_json"
 
+    // Crypto Things
+    compile "org.bouncycastle:bcprov-jdk15on:$bouncy_castle_version"
+
+    // Test Things
     testCompile "org.springframework.boot:spring-boot-starter-test"
     testCompile "org.springframework.restdocs:spring-restdocs-mockmvc:1.1.1.RELEASE"
 }
