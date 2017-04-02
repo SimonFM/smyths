@@ -37,11 +37,13 @@ open class SmythsApp {
 
     @Bean
     open fun init(productRepository: SmythsProductRepository, listTypeRepository: SmythsListTypeRepository,
-                  categoryRepository: SmythsCategoryRepository, brandRepository: SmythsBrandRepository) = CommandLineRunner {
+                  categoryRepository: SmythsCategoryRepository, brandRepository: SmythsBrandRepository,
+                  linkRepository: SmythsLinkRepository) = CommandLineRunner {
         productRepository.createTable()
         listTypeRepository.createTable()
         categoryRepository.createTable()
         brandRepository.createTable()
+        linkRepository.createTable()
     }
     companion object {
         @JvmStatic fun main(args: Array<String>) {

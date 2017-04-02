@@ -26,3 +26,8 @@ object Brands : Table() {
     var id  = text("id").primaryKey()
     var name = text("name")
 }
+
+object Links : Table() {
+    var id  = text("id").primaryKey()
+    var url = text("url")
+}

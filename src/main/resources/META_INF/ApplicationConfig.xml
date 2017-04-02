@@ -11,6 +11,7 @@
     <bean id="categoryRepository" class="com.nintendont.smyths.data.repository.SmythsCategoryRepository"/>
     <bean id="listTypeRepository" class="com.nintendont.smyths.data.repository.SmythsListTypeRepository"/>
     <bean id="brandRepository" class="com.nintendont.smyths.data.repository.SmythsBrandRepository"/>
+    <bean id="linkRepository" class="com.nintendont.smyths.data.repository.SmythsLinkRepository"/>
 
     <!--RestControllers-->
     <bean id="catalogueController" class="com.nintendont.smyths.web.controllers.CatalogueController"/>

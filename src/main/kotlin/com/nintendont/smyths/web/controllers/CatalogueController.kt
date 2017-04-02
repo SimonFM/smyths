@@ -21,6 +21,7 @@ class CatalogueController {
      */
     @RequestMapping("/sync")
     fun getProduct(): String {
+        //catalogueService.generateLinks()
 //        poductService.getAllProducts("22496", "22")
         val products = catalogueService.getAllProducts()
         val json = Gson().toJson(products)
