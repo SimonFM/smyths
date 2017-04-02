@@ -1,5 +1,6 @@
 package com.nintendont.smyths.data.repository
 
+import com.nintendont.smyths.data.Brands
 import com.nintendont.smyths.data.ListTypes
 import com.nintendont.smyths.data.interfaces.CrudRepository
 import com.nintendont.smyths.data.schema.ListType
@@ -23,6 +24,15 @@ open class SmythsListTypeRepository : ListTypeRepository{
 
     override fun findAll(): Iterable<ListType> {
         return ListTypes.selectAll().map { fromRow(it) }
+    }
+
+    override fun find(name : String): ListType {
+        val query : Query = Brands.select{ ListTypes.name.eq(name)}
+        var listType : ListType = ListType("", "")
+        query.forEach {
+            listType = ListType(it[ListTypes.name], it[ListTypes.id])
+        }
+        return listType
     }
 
     override fun deleteAll(): Int {

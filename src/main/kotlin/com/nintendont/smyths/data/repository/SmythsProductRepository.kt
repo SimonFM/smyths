@@ -6,6 +6,7 @@ import com.nintendont.smyths.data.schema.Product
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.springframework.stereotype.Repository
+import java.math.BigDecimal
 import javax.transaction.Transactional
 
 interface ProductRepository: CrudRepository<Product, Long>
@@ -23,6 +24,16 @@ open class SmythsProductRepository : ProductRepository{
 
     override fun findAll(): Iterable<Product> {
         return Products.selectAll().map { fromRow(it) }
+    }
+
+    override fun find(id : String): Product {
+        val query : Query = Products.select{ Products.smythsId.eq(id.toLong())}
+        var product : Product = Product("", 0, "", BigDecimal.ZERO ,"", "", "")
+        query.forEach {
+            product = Product(it[Products.id], it[Products.smythsId], it[Products.name],
+                            it[Products.price], it[Products.categoryId], it[Products.listId], it[Products.brandId])
+        }
+        return product
     }
 
     override fun deleteAll(): Int {

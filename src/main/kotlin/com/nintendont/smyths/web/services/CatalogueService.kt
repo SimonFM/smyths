@@ -52,70 +52,74 @@ open class CatalogueService {
         for (elem in dataProducts) {
             val productData = elem.attr("data-event")
             val json = JSONObject(productData)
-            var listing : String = ""
-            var productName : String = ""
-            var productPriceAsString : String = ""
-            var productPriceAsBigDecimal : BigDecimal = BigDecimal(0)
-            var smythsProductId : String = ""
-            var productBrand : String = ""
-            var categoryName : String = ""
+            val listing : String = if (json.has("listing")) json.get("listing") as String else ""
+            val productName : String = if (json.has("name")) json.get("name") as String else ""
+            val productPriceAsString : String = if (json.has("price")) json.get("price") as String else "0"
+            val productPriceAsBigDecimal : BigDecimal = Utils.stringToBigDecimal(productPriceAsString)
+            val smythsProductId : String =if (json.has("id")) json.get("id") as String else ""
+            val productBrand : String = if (json.has("brand")) json.get("brand") as String else ""
+            val categoryName : String = if (json.has("category")) json.get("category") as String else ""
 
-            if(json.has("listing")){
-                listing = json.get("listing") as String
-            }
-            if(json.has("name")){
-                productName = json.get("name") as String
-            }
-            if(json.has("id")){
-                smythsProductId = json.get("id") as String
-            }
-            if(json.has("price")){
-                productPriceAsString = json.get("price") as String
-                productPriceAsBigDecimal = Utils.stringToBigDecimal(productPriceAsString)
-            }
-            if(json.has("brand")){
-                productBrand = json.get("brand") as String
-            }
-            if(json.has("category")){
-                categoryName = json.get("category") as String
-            }
-            val categoryId : String = UUID.randomUUID().toString()
-            val productId : String = UUID.randomUUID().toString()
-            val brandId : String = UUID.randomUUID().toString()
-            val listingId : String = UUID.randomUUID().toString()
+            val categoryId : String = makeUUID()
+            val productId : String = makeUUID()
+            val brandId : String = makeUUID()
+            val listingId : String = makeUUID()
 
             if(listing.isNotBlank()){
-
-                val list: ListType = ListType(name = listing, id = listingId)
-              //  product.productList = productList
-                lists.add(list)
-                listTypeRepository.create(list)
+                val existingType : ListType = listTypeRepository.find(listing)
+                if (existingType.name.isNotBlank()){
+                    lists.add(existingType)
+                } else{
+                    val list: ListType = ListType(name = listing, id = listingId)
+                    lists.add(list)
+                    listTypeRepository.create(list)
+                }
             }
             if(productBrand.isNotBlank()){
-
-                val brand: Brand = Brand(name = productBrand, id = brandId)
-               // product.brand = brand
-                brands.add(brand)
-                brandRepository.create(brand)
+                val existingBrand : Brand = brandRepository.find(productBrand)
+                if (existingBrand.name.isNotBlank()){
+                    brands.add(existingBrand)
+                } else{
+                    val brand: Brand = Brand(name = productBrand, id = brandId)
+                    brands.add(brand)
+                    brandRepository.create(brand)
+                }
             }
             if(categoryName.isNotBlank()){
-
-                val category: Category = Category(name = categoryName, id = categoryId )
-               // product.category = category
-                categories.add(category)
-                categoryRepository.create(category)
+                val existingCategory : Category = categoryRepository.find(categoryName)
+                if (existingCategory.name.isNotBlank()){
+                    categories.add(existingCategory)
+                } else {
+                    val category: Category = Category(name = categoryName, id = categoryId)
+                    categories.add(category)
+                    categoryRepository.create(category)
+                }
             }
-            val product: Product = Product(id = productId,
-                                           name = productName,
-                                           price = productPriceAsBigDecimal,
-                                           smythsId = smythsProductId.toLong(),
-                                           categoryId = categoryId,
-                                           listTypeId = listingId,
-                                           brandId = brandId)
 
-            productRepository.create(product)
-            products.add(product)
+            val existingProduct : Product = productRepository.find(smythsProductId)
+            if(existingProduct.id.isNotBlank()){
+                products.add(existingProduct)
+            }  else {
+                val product: Product = makeProduct(brandId, categoryId, listingId, productId, productName, productPriceAsBigDecimal, smythsProductId)
+                productRepository.create(product)
+                products.add(product)
+            }
         }
         return products
+    }
+
+    private fun makeProduct(brandId: String, categoryId: String, listingId: String, productId: String,
+                            productName: String, productPriceAsBigDecimal: BigDecimal, smythsProductId: String): Product {
+        return Product(id = productId,
+                name = productName,
+                price = productPriceAsBigDecimal,
+                smythsId = smythsProductId.toLong(),
+                categoryId = categoryId,
+                listTypeId = listingId,
+                brandId = brandId)
+    }
+
+    private fun makeUUID() : String{
+       return UUID.randomUUID().toString()
     }
 }

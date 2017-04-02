@@ -25,6 +25,15 @@ open class SmythsBrandRepository : BrandRepository{
         return Brands.selectAll().map { fromRow(it) }
     }
 
+    override fun find(name : String): Brand {
+        val query : Query = Brands.select{Brands.name.eq(name)}
+        var brand : Brand = Brand("", "")
+        query.forEach {
+            brand = Brand(it[Brands.name], it[Brands.id])
+        }
+        return brand
+    }
+
     override fun deleteAll(): Int {
         return Brands.deleteAll()
     }
