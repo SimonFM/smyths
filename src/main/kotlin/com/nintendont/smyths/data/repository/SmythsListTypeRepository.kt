@@ -27,7 +27,7 @@ open class SmythsListTypeRepository : ListTypeRepository{
     }
 
     override fun find(name : String): ListType {
-        val query : Query = Brands.select{ ListTypes.name.eq(name)}
+        val query : Query = ListTypes.select{ ListTypes.name.eq(name)}
         var listType : ListType = ListType("", "")
         query.forEach {
             listType = ListType(it[ListTypes.name], it[ListTypes.id])

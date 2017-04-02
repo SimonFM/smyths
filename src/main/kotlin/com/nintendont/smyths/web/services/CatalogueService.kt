@@ -52,7 +52,7 @@ open class CatalogueService {
         for (elem in dataProducts) {
             val productData = elem.attr("data-event")
             val json = JSONObject(productData)
-            val listing : String = if (json.has("listing")) json.get("listing") as String else ""
+            val listing : String = if (json.has("list")) json.get("list") as String else ""
             val productName : String = if (json.has("name")) json.get("name") as String else ""
             val productPriceAsString : String = if (json.has("price")) json.get("price") as String else "0"
             val productPriceAsBigDecimal : BigDecimal = Utils.stringToBigDecimal(productPriceAsString)
