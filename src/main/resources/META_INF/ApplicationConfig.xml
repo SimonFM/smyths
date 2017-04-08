@@ -17,6 +17,7 @@
 
     <!--RestControllers-->
     <bean id="catalogueController" class="com.nintendont.smyths.web.controllers.CatalogueController"/>
+    <bean id="productController" class="com.nintendont.smyths.web.controllers.ProductController"/>
 
     <!--Applications-->
     <bean id="application" class="com.nintendont.smyths.app.SmythsApp"/>

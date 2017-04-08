@@ -25,7 +25,7 @@ class CatalogueController {
     /**
      * @author Simon
      *
-     * The /product endpoint to retrieve a certain product
+     * The /product endpoint to fetch all products
      */
     @RequestMapping("/sync/products")
     fun getProduct(): String {
@@ -34,6 +34,11 @@ class CatalogueController {
         return json.toString()
     }
 
+    /**
+     * @author Simon
+     *
+     * The link endpoint to fetch all links
+     */
     @RequestMapping("/sync/links")
     fun getLinks(): String {
         val links = linkService.generateLinks()
@@ -41,6 +46,11 @@ class CatalogueController {
         return json.toString()
     }
 
+    /**
+     * @author Simon
+     *
+     * The location endpoint to fetch all locations
+     */
     @RequestMapping("/sync/locations")
     fun getLocations(): String {
         val links = locationService.generateLocations()

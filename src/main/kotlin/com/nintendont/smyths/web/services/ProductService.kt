@@ -1,13 +1,15 @@
 package com.nintendont.smyths.web.services
 
-import com.google.gson.Gson
 import com.nintendont.smyths.utils.http.HttpHandler
 import com.nintendont.smyths.data.repository.*
 import com.nintendont.smyths.data.schema.*
+import com.nintendont.smyths.data.schema.responses.CheckProductResponse
 import com.nintendont.smyths.utils.Constants
+import com.nintendont.smyths.utils.Constants.SMYTHS_STOCK_CHECKER_URL
 import com.nintendont.smyths.utils.Utils
 import org.json.JSONObject
 import org.jsoup.nodes.Document
+import org.jsoup.select.Elements
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
@@ -28,13 +30,24 @@ open class ProductService {
     @Autowired
     lateinit var linkRepository : SmythsLinkRepository
 
-    fun checkProductAvailability(productId:String, storeId: String){
+    fun checkProductAvailability(productId:String, storeId: String) : JSONObject{
         val product : Pair<String, Any> = Pair("productId", productId)
         val store : Pair<String, Any> = Pair("storeId", storeId)
         val params : MutableList<Pair<String,Any>> = mutableListOf()
         params.add(product)
         params.add(store)
-        httpHandler.post("${Constants.SMYTHS_BASE_URL}/product/productinstorestock/", params)
+        val response: Document = httpHandler.post(SMYTHS_STOCK_CHECKER_URL, params)
+        val inStoreStatusElement : Elements = response.select("div#inStoreStatus")
+        val inStoreStatus : String = inStoreStatusElement.text()
+
+        val canClickCollectElement : Elements = response.select("div#canClickCollect")
+        val canClickCollect : Boolean = if(canClickCollectElement.text().equals("True")) true else false
+
+        val estimatedTimeElement : Elements = response.select("span.pre-order")
+        val estimatedTime : String = estimatedTimeElement.text()
+        val checkProductResponse : CheckProductResponse = CheckProductResponse(message = estimatedTime, inStoreStatus = inStoreStatus, canCollect = canClickCollect)
+
+        return JSONObject(checkProductResponse)
     }
 
     fun getAllProducts() : MutableSet<Product> {

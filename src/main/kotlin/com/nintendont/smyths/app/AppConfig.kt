@@ -43,4 +43,7 @@ open class AppConfig {
 
     @Bean
     open fun linkRepository() = SmythsLinkRepository()
+
+    @Bean
+    open fun locationRepository() = SmythsLocationRepository()
 }
