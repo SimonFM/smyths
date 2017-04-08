@@ -5,9 +5,10 @@ package com.nintendont.smyths.utils
  */
 object Constants {
 
-    open val SMYTHS_BASE_URL : String = "http://www.smythstoys.com/ie/en-ie/"
+    open val SMYTHS_BASE_URL : String = "http://www.smythstoys.com/ie/en-ie"
 
-    open val VIEW_ALL : String = "?viewAll=True"
+    open val VIEW_ALL : String = "viewAll=True"
+    open val PAGE : String = "page"
 
 
     open val DATA_TYPE : String = "data-egatype"

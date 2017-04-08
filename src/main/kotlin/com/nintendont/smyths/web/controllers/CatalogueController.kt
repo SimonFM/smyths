@@ -19,13 +19,17 @@ class CatalogueController {
      *
      * The /product endpoint to retrieve a certain product
      */
-    @RequestMapping("/sync")
+    @RequestMapping("/sync/products")
     fun getProduct(): String {
-        //catalogueService.generateLinks()
-//        poductService.getAllProducts("22496", "22")
         val products = catalogueService.getAllProducts()
         val json = Gson().toJson(products)
+        return json.toString()
+    }
 
+    @RequestMapping("/sync/links")
+    fun getLinks(): String {
+        val links = catalogueService.generateLinks()
+        val json = Gson().toJson(links)
         return json.toString()
     }
 }
