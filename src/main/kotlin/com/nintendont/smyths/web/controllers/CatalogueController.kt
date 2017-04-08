@@ -1,7 +1,9 @@
 package com.nintendont.smyths.web.controllers
 
 import com.google.gson.Gson
-import com.nintendont.smyths.web.services.CatalogueService
+import com.nintendont.smyths.web.services.ProductService
+import com.nintendont.smyths.web.services.LinkService
+import com.nintendont.smyths.web.services.LocationService
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.beans.factory.annotation.Autowired
@@ -12,7 +14,13 @@ import org.springframework.web.bind.annotation.Mapping
 class CatalogueController {
     //
     @Autowired
-    private lateinit var catalogueService: CatalogueService
+    private lateinit var productService: ProductService
+
+    @Autowired
+    private lateinit var linkService: LinkService
+
+    @Autowired
+    private lateinit var locationService: LocationService
 
     /**
      * @author Simon
@@ -21,14 +29,21 @@ class CatalogueController {
      */
     @RequestMapping("/sync/products")
     fun getProduct(): String {
-        val products = catalogueService.getAllProducts()
+        val products = productService.getAllProducts()
         val json = Gson().toJson(products)
         return json.toString()
     }
 
     @RequestMapping("/sync/links")
     fun getLinks(): String {
-        val links = catalogueService.generateLinks()
+        val links = linkService.generateLinks()
+        val json = Gson().toJson(links)
+        return json.toString()
+    }
+
+    @RequestMapping("/sync/locations")
+    fun getLocations(): String {
+        val links = locationService.generateLocations()
         val json = Gson().toJson(links)
         return json.toString()
     }

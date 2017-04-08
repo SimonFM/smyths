@@ -3,7 +3,7 @@ package com.nintendont.smyths.app
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.nintendont.smyths.data.repository.*
-import com.nintendont.smyths.web.services.CatalogueService
+import com.nintendont.smyths.web.services.ProductService
 import org.jetbrains.exposed.spring.SpringTransactionManager
 import org.postgis.geojson.PostGISModule
 import org.springframework.beans.factory.annotation.Autowired
@@ -38,12 +38,13 @@ open class SmythsApp {
     @Bean
     open fun init(productRepository: SmythsProductRepository, listTypeRepository: SmythsListTypeRepository,
                   categoryRepository: SmythsCategoryRepository, brandRepository: SmythsBrandRepository,
-                  linkRepository: SmythsLinkRepository) = CommandLineRunner {
+                  linkRepository: SmythsLinkRepository, locationRepository: SmythsLocationRepository) = CommandLineRunner {
         productRepository.createTable()
         listTypeRepository.createTable()
         categoryRepository.createTable()
         brandRepository.createTable()
         linkRepository.createTable()
+        locationRepository.createTable()
     }
     companion object {
         @JvmStatic fun main(args: Array<String>) {

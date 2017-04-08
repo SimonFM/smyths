@@ -32,3 +32,9 @@ object Links : Table() {
     var url = text("url")
     var links = text("links")
 }
+
+object Locations : Table() {
+    var id  = text("id").primaryKey()
+    var name = text("name")
+    var smythsId = text("smythsId")
+}

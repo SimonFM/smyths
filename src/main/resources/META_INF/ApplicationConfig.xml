@@ -4,7 +4,9 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
     <!--Services-->
-    <bean id="catalogueService" class="com.nintendont.smyths.web.services.CatalogueService"/>
+    <bean id="productService" class="com.nintendont.smyths.web.services.ProductService"/>
+    <bean id="linkService" class="com.nintendont.smyths.web.services.LinkService"/>
+    <bean id="locationService" class="com.nintendont.smyths.web.services.LocationService"/>
 
     <!--Repositories-->
     <bean id="productRepository" class="com.nintendont.smyths.data.repository.SmythsProductRepository"/>
