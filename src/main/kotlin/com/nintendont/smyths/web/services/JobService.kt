@@ -12,7 +12,7 @@ open class JobService{
     /**
      * Scheduled at half five every day
      */
-    @Scheduled(cron = "0 0/30 12 * * *")
+    @Scheduled(cron = "0 0/30 5 * * *")
     fun syncLinks(){
         val params: MutableList<Pair<String, Any>> = mutableListOf()
         val syncLinkResponse = httpHandler.getJson("http://localhost:8888/catalogue/sync/links", params)
@@ -22,7 +22,7 @@ open class JobService{
     /**
      * Scheduled at half seven every day
      */
-    @Scheduled(cron = "0 0/40 12 * * *")
+    @Scheduled(cron = "0 0/40 7 * * *")
     fun syncProducts(){
         val params: MutableList<Pair<String, Any>> = mutableListOf()
         val syncProductsResponse = httpHandler.getJson("http://localhost:8888/catalogue/sync/products", params)
@@ -32,7 +32,7 @@ open class JobService{
     /**
      * Scheduled at half six every day
      */
-    @Scheduled(cron = "0 0/50 12 * * *")
+    @Scheduled(cron = "0 0/50 6 * * *")
     fun syncLocations(){
         val params: MutableList<Pair<String, Any>> = mutableListOf()
         val syncLocationsResponse = httpHandler.getJson("http://localhost:8888/catalogue/sync/locations", params)

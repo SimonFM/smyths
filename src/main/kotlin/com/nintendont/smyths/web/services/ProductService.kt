@@ -67,7 +67,7 @@ open class ProductService {
                 val dataProducts = data.children()
                 for (elem in dataProducts) {
                     val productData = elem.attr(Constants.DATA_EVENT)
-                    if(productData != null){
+                    if(productData.isNotBlank()){
                         try {
                             val json = JSONObject(productData)
                             val listing : String = if (json.has(Constants.LIST)) json.get(Constants.LIST) as String else ""
