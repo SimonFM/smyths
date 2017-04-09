@@ -1,10 +1,7 @@
 package com.nintendont.smyths.app
 
 import com.nintendont.smyths.data.repository.*
-import com.nintendont.smyths.web.services.ProductService
-import com.nintendont.smyths.web.services.CryptoService
-import com.nintendont.smyths.web.services.LinkService
-import com.nintendont.smyths.web.services.LocationService
+import com.nintendont.smyths.web.services.*
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -25,6 +22,9 @@ open class AppConfig {
 
     @Bean
     open fun locationService() = LocationService()
+
+    @Bean
+    open fun jobService() = JobService()
 
     /**
      * Repository Beans

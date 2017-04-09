@@ -7,6 +7,7 @@
     <bean id="productService" class="com.nintendont.smyths.web.services.ProductService"/>
     <bean id="linkService" class="com.nintendont.smyths.web.services.LinkService"/>
     <bean id="locationService" class="com.nintendont.smyths.web.services.LocationService"/>
+    <bean id="jobService" class="com.nintendont.smyths.web.services.JobService"/>
 
     <!--Repositories-->
     <bean id="productRepository" class="com.nintendont.smyths.data.repository.SmythsProductRepository"/>

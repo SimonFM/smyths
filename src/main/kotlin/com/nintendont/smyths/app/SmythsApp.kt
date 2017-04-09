@@ -16,11 +16,13 @@ import org.springframework.context.annotation.ComponentScan
 import org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder
+import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.transaction.annotation.EnableTransactionManagement
 import javax.sql.DataSource
 
 @SpringBootApplication
 @ComponentScan("com.nintendont.smyths")
+@EnableScheduling
 open class SmythsApp {
     @Bean
     open fun objectMapper(): ObjectMapper {

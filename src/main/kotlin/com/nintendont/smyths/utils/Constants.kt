@@ -20,4 +20,6 @@ object Constants {
     open val PRODUCT_NAME : String = "name"
     open val BRAND : String = "brand"
     open val CATEGORY_NAME : String = "category"
+
+
 }

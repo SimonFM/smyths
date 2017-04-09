@@ -1,0 +1,41 @@
+package com.nintendont.smyths.web.services
+
+import com.nintendont.smyths.utils.http.HttpHandler
+import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Service
+
+@Service
+open class JobService{
+
+    private val httpHandler : HttpHandler = HttpHandler()
+
+    /**
+     * Scheduled at half five every day
+     */
+    @Scheduled(cron = "0 0/30 12 * * *")
+    fun syncLinks(){
+        val params: MutableList<Pair<String, Any>> = mutableListOf()
+        val syncLinkResponse = httpHandler.getJson("http://localhost:8888/catalogue/sync/links", params)
+        println("Sync Link response: $syncLinkResponse")
+    }
+
+    /**
+     * Scheduled at half seven every day
+     */
+    @Scheduled(cron = "0 0/40 12 * * *")
+    fun syncProducts(){
+        val params: MutableList<Pair<String, Any>> = mutableListOf()
+        val syncProductsResponse = httpHandler.getJson("http://localhost:8888/catalogue/sync/products", params)
+        println("Sync Products response: $syncProductsResponse")
+    }
+
+    /**
+     * Scheduled at half six every day
+     */
+    @Scheduled(cron = "0 0/50 12 * * *")
+    fun syncLocations(){
+        val params: MutableList<Pair<String, Any>> = mutableListOf()
+        val syncLocationsResponse = httpHandler.getJson("http://localhost:8888/catalogue/sync/locations", params)
+        println("Sync Locations response: $syncLocationsResponse")
+    }
+}

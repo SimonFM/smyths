@@ -6,6 +6,8 @@ import com.github.kittinunf.fuel.core.Response
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.httpPost
 import com.github.kittinunf.result.Result
+import com.google.gson.Gson
+import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.safety.Whitelist
@@ -30,7 +32,7 @@ class HttpHandler{
                 .header(headers)
                 .responseString()
 
-        val responseAsDocument : Document = formatResponse(request, response, result)
+        val responseAsDocument : Document = formatResponseAsHTML(request, response, result)
         return responseAsDocument
     }
 
@@ -41,13 +43,19 @@ class HttpHandler{
      * @param params - The response we got back.
      * @return A map of the response.
      */
-    fun get (url : String, params: List<Pair<String, Any?>>): Document{
+    fun get (url : String, params: List<Pair<String, Any?>>): Document {
         val (request, response, result) = url.httpGet().responseString() // result is Result<String, FuelError>
-        val responseAsDocument : Document = formatResponse(request, response, result)
+        val responseAsDocument: Document = formatResponseAsHTML(request, response, result)
         return responseAsDocument
     }
 
-    private fun formatResponse(request : Request, response: Response, result: Result<String, FuelError> ) : Document{
+    fun getJson (url : String, params: List<Pair<String, Any?>>): JSONObject {
+        val (request, response, result) = url.httpGet().responseString() // result is Result<String, FuelError>
+        val responseAsDocument: JSONObject = formatResponseAsJson(request, response, result)
+        return responseAsDocument
+    }
+
+    private fun formatResponseAsHTML(request : Request, response: Response, result: Result<String, FuelError> ) : Document{
         var document : Document = Document("")
         val (data, error) = result
         val success : Boolean = response.httpStatusCode == 200 && data != null && data.length >= 0
@@ -59,6 +67,20 @@ class HttpHandler{
             printError("ERROR - $error")
         }
         return document
+    }
+
+    private fun formatResponseAsJson(request : Request, response: Response, result: Result<String, FuelError> ) : JSONObject{
+        val (data, error) = result
+        val success : Boolean = response.httpStatusCode == 200 && data != null && data.length >= 0
+        val json : JSONObject = JSONObject(data)
+
+        if (success) {
+            //printSuccess(request, response, result)
+            println(json.toString())
+        } else {
+            printError("ERROR - $error")
+        }
+        return json
     }
 
 
