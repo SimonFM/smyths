@@ -10,7 +10,8 @@ object Constants {
     open val PAGE : String = "page"
 
 
-    open val DATA_TYPE : String = "data-egatype"
+    open val DATA_EGATYPE: String = "data-egatype"
+    open val EGA_PRODUCT : String = "ega-product"
     open val DATA_EVENT : String = "data-event"
 
 

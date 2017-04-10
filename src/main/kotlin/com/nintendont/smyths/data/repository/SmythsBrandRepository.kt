@@ -1,9 +1,11 @@
 package com.nintendont.smyths.data.repository
 
 import com.nintendont.smyths.data.Brands
+import com.nintendont.smyths.data.Products
 import com.nintendont.smyths.data.interfaces.CrudRepository
 import com.nintendont.smyths.data.schema.Brand
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.springframework.stereotype.Repository
 import javax.transaction.Transactional
@@ -18,6 +20,15 @@ open class SmythsBrandRepository : BrandRepository{
 
     override fun create(brand: Brand): Brand {
         Brands.insert(toRow(brand))
+        return brand
+    }
+
+    override fun update(brand: Brand): Brand {
+        val query : Int = Brands.update({ Brands.id.eq(brand.id)} , body = {
+            it[Brands.name] = brand.name
+            it[Brands.id] = brand.id
+        })
+        val result = query.run {}
         return brand
     }
 

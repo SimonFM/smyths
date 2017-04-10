@@ -6,6 +6,7 @@ package com.nintendont.smyths.data.interfaces
 interface CrudRepository<T, K> {
     fun createTable()
     fun create(item: T): T
+    fun update(item: T): T
     fun findAll(): Iterable<T>
     fun find(name : String): T
     fun deleteAll(): Int

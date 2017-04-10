@@ -17,6 +17,25 @@ interface LinkRepository : CrudRepository<Link, Long>
 @Transactional
 open class SmythsLinkRepository : LinkRepository {
 
+    override fun update(item: Link): Link {
+        val linkToUpdate : Link = find(item.url)
+        val linksAsString : String = linkToUpdate.links
+        try{
+            val jsonObject = JSONObject(linksAsString)
+            jsonObject.append("values", item.url)
+            var newJson = Gson().toJson(linksAsString)
+            linkToUpdate.links = newJson.toString()
+
+            val query : Int = Links.update({ Links.id.eq(linkToUpdate.id) }, body = {
+                it[links] = newJson.toString()
+            })
+            query.run {}
+            return linkToUpdate
+        } catch (e :Exception){
+            return Link("", "", "")
+        }
+    }
+
     override fun createTable() = SchemaUtils.create(Links)
 
     override fun create(link: Link): Link {
@@ -26,21 +45,6 @@ open class SmythsLinkRepository : LinkRepository {
 
     override fun findAll(): Iterable<Link> {
         return Links.selectAll().map { fromRow(it) }
-    }
-
-    fun update(url : String) : Link {
-        val linkToUpdate : Link = find(url)
-        val linksAsString : String = linkToUpdate.links
-        val jsonObject = JSONObject(linksAsString)
-        jsonObject.append("values", url)
-        var newJson = Gson().toJson(linksAsString)
-        linkToUpdate.links = newJson.toString()
-
-        val query : Int = Links.update({ Links.id.eq(linkToUpdate.id) }, body = {
-            it[links] = newJson.toString()
-        })
-        query.run {}
-        return linkToUpdate
     }
 
     override fun find(url : String): Link {

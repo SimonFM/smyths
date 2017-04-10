@@ -5,11 +5,13 @@ import org.jetbrains.exposed.sql.*
 object Products : Table() {
     var id = text("id").primaryKey()
     var smythsId = long("smythsId")
+    var smythsStockCheckId = long("smythsStockCheckId")
     var name = text("name")
     var price = decimal("price", 10, 2)
     var categoryId = text("categoryId")
     var listId = text("listId")
     var brandId = text("brandId")
+    var url = text("url")
 }
 
 object Categories : Table() {

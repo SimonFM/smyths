@@ -1,9 +1,11 @@
 package com.nintendont.smyths.data.repository
 
 import com.nintendont.smyths.data.Locations
+import com.nintendont.smyths.data.Products
 import com.nintendont.smyths.data.interfaces.CrudRepository
 import com.nintendont.smyths.data.schema.Location
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.springframework.stereotype.Repository
 import javax.transaction.Transactional
@@ -13,6 +15,16 @@ interface LocationRepository : CrudRepository<Location, Long>
 @Repository("locationRepository")
 @Transactional
 open class SmythsLocationRepository : LocationRepository{
+    override fun update(location: Location): Location {
+        val query : Int = Locations.update({ Locations.smythsId.eq(location.id)} , body = {
+            toRow(location)
+            it[Locations.name] = location.name
+            it[Locations.id] = location.id
+            it[Locations.smythsId] = location.smythsId
+        })
+        val result = query.run {}
+        return location
+    }
 
     override fun createTable() = SchemaUtils.create(Locations)
 

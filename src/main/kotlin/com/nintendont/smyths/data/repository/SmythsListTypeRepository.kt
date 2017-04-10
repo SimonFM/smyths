@@ -1,10 +1,12 @@
 package com.nintendont.smyths.data.repository
 
 import com.nintendont.smyths.data.Brands
+import com.nintendont.smyths.data.Links
 import com.nintendont.smyths.data.ListTypes
 import com.nintendont.smyths.data.interfaces.CrudRepository
 import com.nintendont.smyths.data.schema.ListType
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.springframework.stereotype.Repository
 import javax.transaction.Transactional
@@ -14,6 +16,15 @@ interface ListTypeRepository : CrudRepository<ListType, Long>
 @Repository("listTypeRepository")
 @Transactional
 open class SmythsListTypeRepository : ListTypeRepository{
+
+    override fun update(list: ListType): ListType {
+        val query : Int = ListTypes.update({ ListTypes.id.eq(list.id) }, body = {
+            it[name] = list.name
+            it[id] = list.id
+        })
+        query.run {}
+        return list
+    }
 
     override fun createTable() = SchemaUtils.create(ListTypes)
 

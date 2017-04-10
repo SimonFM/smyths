@@ -1,5 +1,6 @@
 package com.nintendont.smyths.web.services
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.Gson
 import com.nintendont.smyths.utils.http.HttpHandler
 import com.nintendont.smyths.data.repository.*
@@ -8,6 +9,7 @@ import com.nintendont.smyths.utils.Constants
 import org.jsoup.nodes.Document
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import java.io.IOException
 import java.util.*
 
 @Service
@@ -28,12 +30,19 @@ open class LinkService {
         for (e in listOfLinks){
             val url : String = e.attr("abs:href")
             if(url.isNotBlank()){
-                val existingLink : Link = linkRepository.find(url)
+                var existingLink : Link = linkRepository.find(url)
+                val subLinks = generateSubLinks(url, 1)
                 if (existingLink.url.isNotBlank()){
-                    links.add((existingLink))
-                    println("Found existing link for url: $existingLink")
+                    if(subLinks == existingLink.links){
+                        val tempLink = existingLink
+                        tempLink.links = subLinks
+                        existingLink = linkRepository.update(tempLink)
+                    }
+                    if(existingLink.id.isNotBlank()){
+                        links.add((existingLink))
+                        println("Found existing link for url: $existingLink")
+                    }
                 } else{
-                    val subLinks = generateSubLinks(url, 1)
                     val link: Link = Link(url = url, id = makeUUID(), links = subLinks)
                     linkRepository.create(link)
                     links.add((link))
@@ -41,6 +50,7 @@ open class LinkService {
                 }
             }
         }
+        println("*-*-*- Finished generating Links. -*-*-*")
         return links
     }
 
@@ -56,8 +66,8 @@ open class LinkService {
 
             val response : Document = httpHandler.get(urlToGet, params)
 
-            if (response.getElementsByAttribute(Constants.DATA_TYPE).isNotEmpty()){
-                val data = response.getElementsByAttribute(Constants.DATA_TYPE)[0]
+            if (response.getElementsByAttribute(Constants.DATA_EGATYPE).isNotEmpty()){
+                val data = response.getElementsByAttribute(Constants.DATA_EGATYPE)[0]
                 val dataProducts = data.children()
                 if(dataProducts.isNotEmpty()){
                     val subLink : Link = Link(url = url, id = makeUUID(), links = "")
@@ -73,7 +83,18 @@ open class LinkService {
             }
         }
         val newJson = Gson().toJson(subLinks)
-        return newJson.toString()
+        println("******* Finished generating sub links for url: $url *******")
+        return if(isValidJson(newJson)) newJson.toString() else ""
+    }
+
+    private fun isValidJson(json : String): Boolean{
+        try {
+            val mapper = ObjectMapper()
+            mapper.readTree(json)
+            return true
+        } catch (e: IOException) {
+            return false
+        }
     }
 
     private fun makeUUID() : String{

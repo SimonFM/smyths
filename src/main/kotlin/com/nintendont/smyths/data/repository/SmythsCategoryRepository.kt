@@ -1,9 +1,11 @@
 package com.nintendont.smyths.data.repository
 
 import com.nintendont.smyths.data.Categories
+import com.nintendont.smyths.data.ListTypes
 import com.nintendont.smyths.data.interfaces.CrudRepository
 import com.nintendont.smyths.data.schema.Category
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.springframework.stereotype.Repository
 import javax.transaction.Transactional
@@ -13,6 +15,15 @@ interface CategoryRepository: CrudRepository<Category, Long>
 @Repository("categoryRepository")
 @Transactional
 open class SmythsCategoryRepository : CategoryRepository{
+
+    override fun update(category : Category): Category {
+        val query : Int = Categories.update({ Categories.id.eq(category.id) }, body = {
+            it[Categories.name] = category.name
+            it[Categories.id] = category.id
+        })
+        query.run {}
+        return category
+    }
 
     override fun createTable() = SchemaUtils.create(Categories)
 
