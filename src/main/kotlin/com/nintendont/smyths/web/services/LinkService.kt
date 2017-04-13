@@ -31,9 +31,9 @@ open class LinkService {
             val url : String = e.attr("abs:href")
             if(url.isNotBlank()){
                 var existingLink : Link = linkRepository.find(url)
-                val subLinks = generateSubLinks(url, 1)
+                val subLinks : String = generateSubLinks(url, 1)
                 if (existingLink.url.isNotBlank()){
-                    if(subLinks == existingLink.links){
+                    if(subLinks.equals(existingLink.links)){
                         val tempLink = existingLink
                         tempLink.links = subLinks
                         existingLink = linkRepository.update(tempLink)

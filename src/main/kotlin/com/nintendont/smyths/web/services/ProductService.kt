@@ -135,35 +135,35 @@ open class ProductService {
 
     private fun determineProduct(newProduct : Product, existingProduct : Product) : Product {
         if(existingProduct.id.isNotBlank()){
-            val updatePrice : Boolean = existingProduct.price != newProduct.price
+            val updatePrice : Boolean =  existingProduct.price.compareTo(newProduct.price) != 0
             if(updatePrice){
                 existingProduct.price = newProduct.price
             }
-            val updateName : Boolean = existingProduct.name != newProduct.name
+            val updateName : Boolean = compareProductStrings(existingProduct.name, newProduct.name)
             if(updateName){
                 existingProduct.name = newProduct.name
             }
-            val updateURL : Boolean = existingProduct.url != newProduct.url
+            val updateURL : Boolean = compareProductStrings(existingProduct.url, newProduct.url)
             if(updateURL){
                 existingProduct.url = newProduct.url
             }
-            val updateCategory : Boolean = existingProduct.categoryId != newProduct.categoryId
+            val updateCategory : Boolean = compareProductStrings(existingProduct.categoryId, newProduct.categoryId)
             if(updateCategory){
                 existingProduct.categoryId = newProduct.categoryId
             }
-            val updateListing : Boolean = existingProduct.listTypeId != newProduct.listTypeId
+            val updateListing : Boolean = compareProductStrings(existingProduct.listTypeId, newProduct.listTypeId)
             if(updateListing){
                 existingProduct.listTypeId = newProduct.listTypeId
             }
-            val updateBrand : Boolean = existingProduct.brandId != newProduct.brandId
+            val updateBrand : Boolean = compareProductStrings(existingProduct.brandId, newProduct.brandId)
             if(updateBrand){
                 existingProduct.brandId = newProduct.brandId
             }
-            val updateSmythsId : Boolean = existingProduct.smythsId != newProduct.smythsId
+            val updateSmythsId : Boolean = existingProduct.smythsId.compareTo(newProduct.smythsId) != 0
             if(updateSmythsId){
                 existingProduct.smythsId = newProduct.smythsId
             }
-            val updateSmythsStockId : Boolean = existingProduct.smythsStockCheckId != newProduct.smythsStockCheckId
+            val updateSmythsStockId : Boolean = existingProduct.smythsStockCheckId.compareTo(newProduct.smythsStockCheckId) != 0
             if(updateSmythsStockId){
                 existingProduct.smythsStockCheckId = newProduct.smythsStockCheckId
             }
@@ -182,6 +182,10 @@ open class ProductService {
             }
             return newProduct
         }
+    }
+
+    private fun compareProductStrings(existingProduct: String, newProduct: String) : Boolean {
+        return !existingProduct.equals(newProduct)
     }
 
     private fun makeCategory(categoryName: String): String {

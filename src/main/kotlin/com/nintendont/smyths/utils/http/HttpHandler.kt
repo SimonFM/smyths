@@ -64,7 +64,7 @@ class HttpHandler{
             //printSuccess(request, response, result)
             document = prettyPrintHtml(data)
         } else {
-            printError("ERROR - $error")
+            printError("HTML -> REQUEST: $request with error: $error")
         }
         return document
     }
@@ -78,7 +78,7 @@ class HttpHandler{
             //printSuccess(request, response, result)
             println(json.toString())
         } else {
-            printError("ERROR - $error")
+            printError("JSON -> REQUEST: $request with error: $error")
         }
         return json
     }
