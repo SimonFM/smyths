@@ -29,7 +29,7 @@ class CatalogueController {
      */
     @RequestMapping("/sync/products")
     fun getProduct(): String {
-        val products = productService.getAllProducts()
+        val products = productService.syncAllProducts()
         val json = Gson().toJson(products)
         return json.toString()
     }

@@ -34,7 +34,7 @@ open class ProductService {
     lateinit var linkRepository : SmythsLinkRepository
 
     fun checkProductAvailability(productId:String, storeId: String) : JSONObject{
-        println("Checking product availability for productId: $productId and storeId: $storeId....")
+        println("_____ Checking product availability for productId: $productId and storeId: $storeId ____")
 
         val product : Pair<String, Any> = Pair("productId", productId)
         val store : Pair<String, Any> = Pair("storeId", storeId)
@@ -57,8 +57,8 @@ open class ProductService {
         return JSONObject(checkProductResponse)
     }
 
-    fun getAllProducts() : MutableSet<Product> {
-        println("Generating Products....")
+    fun syncAllProducts() : MutableSet<Product> {
+        println("*-*-*- Started Syncing All Products -*-*-*")
         val links = linkRepository.findAll()
         val products = mutableSetOf<Product>()
 
@@ -66,7 +66,15 @@ open class ProductService {
             val productsFromUrl = fetchForUrl(url = link.url)
             products.addAll(productsFromUrl)
         }
-        println("*-*-*- Generated All Products -*-*-*")
+        println("*-*-*- Finished Syncing All Products -*-*-*")
+        return products
+    }
+
+    fun getAllProducts( start: Int, end : Int) : Iterable<Product> {
+        println("*-*-*- Starting range ($start -> $end) Products -*-*-*")
+        val products = productRepository.findAllInRange(start, end)
+
+        println("*-*-*- Ending range ($start -> $end) Products -*-*-*")
         return products
     }
 

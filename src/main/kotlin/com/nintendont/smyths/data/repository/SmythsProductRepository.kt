@@ -40,7 +40,14 @@ open class SmythsProductRepository : ProductRepository{
     }
 
     override fun findAll(): Iterable<Product> {
-        return Products.selectAll().map { fromRow(it) }
+        val allProducts : Iterable<Product> = Products.selectAll().map { fromRow(it) }
+        return allProducts
+    }
+
+    fun findAllInRange(low : Int, high : Int): List<Product> {
+        val allProducts : Iterable<Product> = findAll()
+        val filteredList : List<Product> = allProducts.toList().subList(low, high)
+        return filteredList
     }
 
     override fun find(id : String): Product {
@@ -48,7 +55,7 @@ open class SmythsProductRepository : ProductRepository{
         var product : Product = Product("", 0, 0, "", BigDecimal.ZERO , "","", "", "")
         query.forEach {
             product = Product(it[Products.id], it[Products.smythsId], it[Products.smythsStockCheckId], it[Products.name],
-                            it[Products.price], it[Products.categoryId], it[Products.listId], it[Products.brandId], it[Products.url])
+                              it[Products.price], it[Products.categoryId], it[Products.listId], it[Products.brandId], it[Products.url])
         }
         return product
     }

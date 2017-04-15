@@ -4,6 +4,9 @@
 logging:
   level:
     org.springframework.web.servlet: INFO
+    org.springframework.web: DEBUG
+    ROOT: DEBUG
+
 spring:
   datasource:
     platform: "postgis"
