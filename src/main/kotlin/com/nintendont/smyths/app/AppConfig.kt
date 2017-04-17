@@ -11,39 +11,19 @@ open class AppConfig {
     /**
      * Service Beans
      */
-    @Bean
-    open fun productService() = ProductService()
-
-    @Bean
-    open fun cryptoService() = CryptoService()
-
-    @Bean
-    open fun linkService() = LinkService()
-
-    @Bean
-    open fun locationService() = LocationService()
-
-    @Bean
-    open fun jobService() = JobService()
+    @Bean open fun productService() = ProductService()
+    @Bean open fun cryptoService() = CryptoService()
+    @Bean open fun linkService() = LinkService()
+    @Bean open fun locationService() = LocationService()
+    @Bean open fun jobService() = JobService()
 
     /**
      * Repository Beans
      */
-    @Bean
-    open fun productRepository() = SmythsProductRepository()
-
-    @Bean
-    open fun listTypeRepository() = SmythsListTypeRepository()
-
-    @Bean
-    open fun brandRepository() = SmythsBrandRepository()
-
-    @Bean
-    open fun categoryRepository() = SmythsCategoryRepository()
-
-    @Bean
-    open fun linkRepository() = SmythsLinkRepository()
-
-    @Bean
-    open fun locationRepository() = SmythsLocationRepository()
+    @Bean open fun productRepository() = SmythsProductRepository()
+    @Bean open fun listTypeRepository() = SmythsListTypeRepository()
+    @Bean open fun brandRepository() = SmythsBrandRepository()
+    @Bean open fun categoryRepository() = SmythsCategoryRepository()
+    @Bean open fun linkRepository() = SmythsLinkRepository()
+    @Bean open fun locationRepository() = SmythsLocationRepository()
 }

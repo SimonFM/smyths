@@ -8,9 +8,7 @@ import java.security.MessageDigest
 /**
  * Created by simon on 30/03/2017.
  */
-@Service("cryptoService")
-open class CryptoService{
-
+@Service("cryptoService") open class CryptoService{
     fun generateIdFrom(text : String) : String{
         val md = MessageDigest.getInstance("SHA-256")
         md.update(text.toByteArray())

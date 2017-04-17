@@ -2,8 +2,8 @@ package com.nintendont.smyths.web.services
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.Gson
+import com.nintendont.smyths.data.repository.SmythsLinkRepository
 import com.nintendont.smyths.utils.http.HttpHandler
-import com.nintendont.smyths.data.repository.*
 import com.nintendont.smyths.data.schema.*
 import com.nintendont.smyths.utils.Constants
 import org.jsoup.nodes.Document
@@ -12,13 +12,15 @@ import org.springframework.stereotype.Service
 import java.io.IOException
 import java.util.*
 
-@Service
-open class LinkService {
+@Service open class LinkService {
 
     private val httpHandler : HttpHandler = HttpHandler()
-    @Autowired
-    lateinit var linkRepository : SmythsLinkRepository
+    @Autowired lateinit var linkRepository : SmythsLinkRepository
 
+    /**
+     * Generates the Links from smyths.ie and stores them in the Links Table.
+     * @return Set of Links
+     */
     fun generateLinks() : MutableSet<Link>{
         println("Generating Links....")
         val links = mutableSetOf<Link>()
@@ -36,7 +38,7 @@ open class LinkService {
                     if(subLinks.equals(existingLink.links)){
                         val tempLink = existingLink
                         tempLink.links = subLinks
-                        existingLink = linkRepository.update(tempLink)
+                        existingLink = linkRepository.create(tempLink)
                     }
                     if(existingLink.id.isNotBlank()){
                         links.add((existingLink))
@@ -54,6 +56,10 @@ open class LinkService {
         return links
     }
 
+    /**
+     * Generates the sub links for every link in the database.
+     * @return Json string of the urls.
+     */
     private fun generateSubLinks(url : String, startingPage : Int) : String {
         println("Generating sub links for url: $url....")
 
@@ -87,6 +93,11 @@ open class LinkService {
         return if(isValidJson(newJson)) newJson.toString() else ""
     }
 
+    /**
+     * Checks whether or not json is valid
+     * @param json - the json to test
+     * @return True if valid, False if not
+     */
     private fun isValidJson(json : String): Boolean{
         try {
             val mapper = ObjectMapper()
@@ -96,7 +107,10 @@ open class LinkService {
             return false
         }
     }
-
+    /**
+     * Makes a unique identifier
+     * @return Id as a string
+     */
     private fun makeUUID() : String{
        return UUID.randomUUID().toString()
     }

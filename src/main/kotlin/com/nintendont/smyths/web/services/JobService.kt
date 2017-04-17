@@ -4,9 +4,10 @@ import com.nintendont.smyths.utils.http.HttpHandler
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 
-@Service
-open class JobService{
-
+/**
+ * Service to automatically schedule syncing of the data
+ */
+@Service open class JobService{
     private val httpHandler : HttpHandler = HttpHandler()
 
     /**

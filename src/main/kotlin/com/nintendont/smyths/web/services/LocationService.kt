@@ -10,13 +10,15 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.util.*
 
-@Service
-open class LocationService {
+@Service open class LocationService {
 
     private val httpHandler : HttpHandler = HttpHandler()
-    @Autowired
-    lateinit var locationRepository : SmythsLocationRepository
+    @Autowired lateinit var locationRepository : SmythsLocationRepository
 
+    /**
+     * Generates the locations from smyths.ie and stores them in the Location Table.
+     * @return Set of Locations
+     */
     fun generateLocations() : MutableSet<Location>{
         println("Generating Locations....")
         val locationsResult = mutableSetOf<Location>()
@@ -37,17 +39,21 @@ open class LocationService {
                 val existingLocation : Location = locationRepository.find(locationName)
                 if (existingLocation.name.isNotBlank()){
                     locationsResult.add(existingLocation)
-                    println("Found existing link for url: $existingLocation")
+                    println("Found existing Location for location: $existingLocation")
                 } else{
                     locationRepository.create(newLocation)
                     locationsResult.add(newLocation)
-                    println("New Link Saved: $newLocation")
+                    println("New Location Saved: $newLocation")
                 }
             }
         }
         return locationsResult
     }
 
+    /**
+     * Makes a unique identifier
+     * @return Id as a string
+     */
     private fun makeUUID() : String{
        return UUID.randomUUID().toString()
     }

@@ -6,11 +6,11 @@ object Products : Table() {
     var id = text("id").primaryKey()
     var smythsId = long("smythsId")
     var smythsStockCheckId = long("smythsStockCheckId")
-    var name = text("name")
+    var name = varchar("name", 400) // changed to varchar for 'LIKE'
     var price = decimal("price", 10, 2)
-    var categoryId = text("categoryId")
-    var listId = text("listId")
-    var brandId = text("brandId")
+    var categoryId = (text("categoryId") references Categories.id).nullable()
+    var listId = (text("listId") references ListTypes.id).nullable()
+    var brandId = (text("brandId") references Brands.id).nullable()
     var url = text("url")
 }
 
@@ -36,7 +36,7 @@ object Links : Table() {
 }
 
 object Locations : Table() {
-    var id  = text("id").primaryKey()
+    var id = text("id").primaryKey()
     var name = text("name")
     var smythsId = text("smythsId")
 }

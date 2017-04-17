@@ -13,19 +13,13 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/catalogue")
 class CatalogueController {
     //
-    @Autowired
-    private lateinit var productService: ProductService
-
-    @Autowired
-    private lateinit var linkService: LinkService
-
-    @Autowired
-    private lateinit var locationService: LocationService
+    @Autowired private lateinit var productService: ProductService
+    @Autowired private lateinit var linkService: LinkService
+    @Autowired private lateinit var locationService: LocationService
 
     /**
      * @author Simon
-     *
-     * The /product endpoint to fetch all products
+     * The /product endpoint to sync all products
      */
     @RequestMapping("/sync/products")
     fun getProduct(): String {

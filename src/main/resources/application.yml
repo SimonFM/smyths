@@ -3,9 +3,8 @@
 #
 logging:
   level:
-    org.springframework.web.servlet: INFO
-    org.springframework.web: DEBUG
-    ROOT: DEBUG
+    org.springframework.web.servlet: INFO, ERROR
+    org.springframework.transaction.interceptor: TRACE
 
 spring:
   datasource:

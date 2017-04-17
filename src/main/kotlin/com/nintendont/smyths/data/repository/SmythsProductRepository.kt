@@ -1,11 +1,9 @@
 package com.nintendont.smyths.data.repository
 
 import com.nintendont.smyths.data.Products
-import com.nintendont.smyths.data.Products.id
 import com.nintendont.smyths.data.interfaces.CrudRepository
 import com.nintendont.smyths.data.schema.Product
 import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.springframework.stereotype.Repository
 import java.math.BigDecimal
@@ -40,8 +38,7 @@ open class SmythsProductRepository : ProductRepository{
     }
 
     override fun findAll(): Iterable<Product> {
-        val allProducts : Iterable<Product> = Products.selectAll().map { fromRow(it) }
-        return allProducts
+        return Products.selectAll().map { fromRow(it) }
     }
 
     fun findAllInRange(low : Int, high : Int): List<Product> {
@@ -50,12 +47,24 @@ open class SmythsProductRepository : ProductRepository{
         return filteredList
     }
 
+    fun searchForProducts(searchQuery : String) : MutableSet<Product>{
+        val listOfProducts : Iterable<Product> = findAll()
+        val queryAsLowerCase : String = searchQuery.toLowerCase()
+        val selectedProducts : MutableSet<Product> = mutableSetOf()
+        //Products.select(where = {Products.name.like("$searchQuery%")}) // TODO: causes an exception for the like query.
+        listOfProducts.forEach { product : Product ->
+            val productNameAsLowerCase : String = product.name.toLowerCase()
+            if(productNameAsLowerCase.contains(queryAsLowerCase)){
+                selectedProducts.add(product)
+            }
+        }
+        return selectedProducts
+    }
+
     override fun find(id : String): Product {
-        val query : Query = Products.select{ Products.smythsId.eq(id.toLong())}
         var product : Product = Product("", 0, 0, "", BigDecimal.ZERO , "","", "", "")
-        query.forEach {
-            product = Product(it[Products.id], it[Products.smythsId], it[Products.smythsStockCheckId], it[Products.name],
-                              it[Products.price], it[Products.categoryId], it[Products.listId], it[Products.brandId], it[Products.url])
+        Products.select{ Products.smythsId.eq(id.toLong())}.forEach {
+            product = fromRow(it)
         }
         return product
     }
@@ -77,6 +86,13 @@ open class SmythsProductRepository : ProductRepository{
     }
 
     private fun fromRow(r: ResultRow) =
-            Product( r[Products.id],r[Products.smythsId], r[Products.smythsStockCheckId], r[Products.name],
-                     r[Products.price], r[Products.categoryId], r[Products.listId], r[Products.brandId], r[Products.url])
+            Product( r[Products.id],
+                     r[Products.smythsId],
+                     r[Products.smythsStockCheckId],
+                     r[Products.name],
+                     r[Products.price],
+                     r[Products.categoryId],
+                     r[Products.listId],
+                     r[Products.brandId],
+                     r[Products.url])
 }

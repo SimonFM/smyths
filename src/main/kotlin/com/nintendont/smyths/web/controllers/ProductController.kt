@@ -4,27 +4,26 @@ import com.google.gson.Gson
 import com.nintendont.smyths.data.schema.Product
 import com.nintendont.smyths.data.schema.requests.CheckProductRequest
 import com.nintendont.smyths.data.schema.requests.GetProductsRequest
+import com.nintendont.smyths.data.schema.requests.SearchProductsRequest
+import com.nintendont.smyths.data.schema.responses.SearchQueryResponse
 import com.nintendont.smyths.web.services.ProductService
-import org.apache.catalina.servlet4preview.http.HttpServletRequest
 import org.json.JSONObject
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
 
-
 @RestController
+@CrossOrigin(origins = arrayOf("http://localhost:4200"))
 @RequestMapping("/product")
 class ProductController {
     //
-    @Autowired
-    private lateinit var productService: ProductService
+    @Autowired private lateinit var productService: ProductService
 
     /**
      * @author Simon
      *
      * The /product endpoint to retrieve a certain product
      */
-    @CrossOrigin(origins = arrayOf("http://localhost:4200"))
-    @RequestMapping("/check", method = arrayOf(RequestMethod.POST))
+    @PostMapping("/available")
     fun checkProduct(@RequestBody checkProductRequest: CheckProductRequest): String {
         var products : JSONObject = JSONObject()
         val productId : String? = checkProductRequest.productId
@@ -36,8 +35,7 @@ class ProductController {
         return json.toString()
     }
 
-    @CrossOrigin(origins = arrayOf("http://localhost:4200"))
-    @RequestMapping(value = "/getProducts", method = arrayOf(RequestMethod.POST))
+    @PostMapping("/all")
     fun getAllProducts(@RequestBody getProductsRequest: GetProductsRequest): String {
         var productsList : Iterable<Product> = listOf()
         val lowRange : Int? = getProductsRequest.lowRange
@@ -49,5 +47,23 @@ class ProductController {
             productsList = productService.getAllProducts(lowRange as Int,  highRange as Int)
         }
         return Gson().toJson(productsList)
+    }
+
+    @PostMapping("/search")
+    fun searchProducts(@RequestBody searchProductsRequest: SearchProductsRequest): String {
+        val searchQuery : String? = searchProductsRequest.search
+        val validSearchQuery : Boolean = !searchQuery.isNullOrBlank()
+        val searchQueryResponse : SearchQueryResponse = makeSearchResponse(searchQuery, validSearchQuery)
+        val response : String = Gson().toJson(searchQueryResponse)
+        return response
+    }
+
+    private fun makeSearchResponse(searchQuery : String?, validSearchQuery : Boolean) : SearchQueryResponse{
+        if(validSearchQuery) {
+            return productService.searchForProducts(searchQuery.toString())
+        }
+        return SearchQueryResponse(message = "Invalid parameters for 'search'",
+                                   error = "Null Query",
+                                   products = JSONObject(listOf<Product>()).toString())
     }
 }
