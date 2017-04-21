@@ -1,5 +1,6 @@
 package com.nintendont.smyths.utils
 
+import com.google.gson.Gson
 import java.math.BigDecimal
 
 object Utils{
@@ -13,5 +14,9 @@ object Utils{
         val processedString = number.replace(",".toRegex(), "")
         val stringAsBigDecimal = BigDecimal(processedString)
         return stringAsBigDecimal
+    }
+
+    fun objectToString(any: Any) : String{
+        return Gson().toJson(any).toString()
     }
 }

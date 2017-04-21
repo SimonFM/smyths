@@ -50,6 +50,17 @@ import java.util.*
         return locationsResult
     }
 
+    /***
+     * @author Simon
+     * Fetches all the locations from the database.
+     */
+    fun getLocations() : MutableSet<Location> {
+        println("....  Finding All Locations   ....")
+        val allLocations = locationRepository.findAll()
+        return allLocations.toMutableSet()
+        println("....  Found All Locations   ....")
+    }
+
     /**
      * Makes a unique identifier
      * @return Id as a string
