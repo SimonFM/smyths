@@ -3,7 +3,6 @@ package com.nintendont.smyths.web.services
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.Gson
 import com.nintendont.smyths.data.repository.SmythsLinkRepository
-import com.nintendont.smyths.utils.http.HttpHandler
 import com.nintendont.smyths.data.schema.*
 import com.nintendont.smyths.utils.Constants
 import org.jsoup.nodes.Document
@@ -14,8 +13,16 @@ import java.util.*
 
 @Service open class LinkService {
 
-    private val httpHandler : HttpHandler = HttpHandler()
+    @Autowired lateinit var httpService : HttpService
     @Autowired lateinit var linkRepository : SmythsLinkRepository
+
+    // Invalid Urls causing endless loops
+    private val sonyConsoleProblemUrl : String = "http://www.smythstoys.com/ie/en-ie/video-games-tablets/c-747/playstation-4/"
+    private val xboxOneProblemUrl : String = "http://www.smythstoys.com/ie/en-ie/video-games-tablets/c-751/xbox-one/"
+
+    // Corrected values
+    private val validSonyConsoleUrl : String = "http://www.smythstoys.com/ie/en-ie/video-games-tablets/c-747/playstation-4-consoles/"
+    private val validXboxConsoleUrl : String = "http://www.smythstoys.com/ie/en-ie/video-games-tablets/c-751/xbox-one-consoles/"
 
     /**
      * Generates the Links from smyths.ie and stores them in the Links Table.
@@ -25,20 +32,20 @@ import java.util.*
         println("Generating Links....")
         val links = mutableSetOf<Link>()
         val params: MutableList<Pair<String, Any>> = mutableListOf()
-        val response: Document = httpHandler.get(Constants.SMYTHS_BASE_URL, params)
+        val response: Document = httpService.get(Constants.SMYTHS_BASE_URL, params)
         val menuItems = response.select("li.menu-item")
         val popupItems = menuItems.select("[aria-haspopup=\"false\"]")
         val listOfLinks = popupItems.select("[href]")
         for (e in listOfLinks){
             val url : String = e.attr("abs:href")
             if(url.isNotBlank()){
-                var existingLink : Link = linkRepository.find(url)
+                var existingLink : Link = this.linkRepository.find(url)
                 val subLinks : String = generateSubLinks(url, 1)
                 if (existingLink.url.isNotBlank()){
                     if(subLinks.equals(existingLink.links)){
                         val tempLink = existingLink
                         tempLink.links = subLinks
-                        existingLink = linkRepository.create(tempLink)
+                        existingLink = this.linkRepository.update(tempLink)
                     }
                     if(existingLink.id.isNotBlank()){
                         links.add((existingLink))
@@ -46,7 +53,7 @@ import java.util.*
                     }
                 } else{
                     val link: Link = Link(url = url, id = makeUUID(), links = subLinks)
-                    linkRepository.create(link)
+                    this.linkRepository.create(link)
                     links.add((link))
                     println("New Link Saved: $link")
                 }
@@ -67,16 +74,17 @@ import java.util.*
         var hasMoreLinksToGet : Boolean = true
         val subLinks  = mutableSetOf<Link>()
         while(hasMoreLinksToGet){
-            val urlToGet = "$url?${Constants.VIEW_ALL}&${Constants.PAGE}=$page"
+            val filteredUrl = filterUrl(url)
+            val urlToGet = "$filteredUrl?${Constants.VIEW_ALL}&${Constants.PAGE}=$page"
             val params : MutableList<Pair<String,Any>> = mutableListOf()
 
-            val response : Document = httpHandler.get(urlToGet, params)
+            val response : Document = this.httpService.get(urlToGet, params)
 
             if (response.getElementsByAttribute(Constants.DATA_EGATYPE).isNotEmpty()){
                 val data = response.getElementsByAttribute(Constants.DATA_EGATYPE)[0]
                 val dataProducts = data.children()
                 if(dataProducts.isNotEmpty()){
-                    val subLink : Link = Link(url = url, id = makeUUID(), links = "")
+                    val subLink : Link = Link(url = urlToGet, id = makeUUID(), links = "")
                     subLinks.add(subLink)
                     page++
                     println("Adding New page for $url, pageCount : $page")
@@ -91,6 +99,16 @@ import java.util.*
         val newJson = Gson().toJson(subLinks)
         println("******* Finished generating sub links for url: $url *******")
         return if(isValidJson(newJson)) newJson.toString() else ""
+    }
+
+    private fun filterUrl(url : String) : String {
+        var urlToReturn = url
+
+        when (url) {
+            this.sonyConsoleProblemUrl -> urlToReturn = this.validSonyConsoleUrl
+            this.xboxOneProblemUrl -> urlToReturn = this.validXboxConsoleUrl
+        }
+        return urlToReturn
     }
 
     /**

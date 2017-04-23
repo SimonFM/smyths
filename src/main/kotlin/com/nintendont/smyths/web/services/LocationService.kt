@@ -1,6 +1,5 @@
 package com.nintendont.smyths.web.services
 
-import com.nintendont.smyths.utils.http.HttpHandler
 import com.nintendont.smyths.data.repository.*
 import com.nintendont.smyths.data.schema.*
 import com.nintendont.smyths.utils.Constants.SMYTHS_LOCATIONS_URL
@@ -12,7 +11,7 @@ import java.util.*
 
 @Service open class LocationService {
 
-    private val httpHandler : HttpHandler = HttpHandler()
+    @Autowired lateinit var httpService : HttpService
     @Autowired lateinit var locationRepository : SmythsLocationRepository
 
     /**
@@ -23,7 +22,7 @@ import java.util.*
         println("Generating Locations....")
         val locationsResult = mutableSetOf<Location>()
         val params: MutableList<Pair<String, Any>> = mutableListOf()
-        val response: Document = httpHandler.get(SMYTHS_LOCATIONS_URL, params)
+        val response: Document = this.httpService.get(SMYTHS_LOCATIONS_URL, params)
         val locationsDiv : Elements = response.select("div#store-locator")
         val locationsResultsDiv : Elements = locationsDiv.select("div.store-locator-results")
         val locationsContent : Elements = locationsResultsDiv.select("div.StoreContent")
@@ -36,7 +35,7 @@ import java.util.*
                 val locationName = location.text()
                 val locationId = location.attr("data-storeid")
                 val newLocation : Location = Location(name =locationName , id = makeUUID(), smythsId = locationId )
-                val existingLocation : Location = locationRepository.find(locationName)
+                val existingLocation : Location = this.locationRepository.find(locationName)
                 if (existingLocation.name.isNotBlank()){
                     locationsResult.add(existingLocation)
                     println("Found existing Location for location: $existingLocation")
@@ -56,9 +55,9 @@ import java.util.*
      */
     fun getLocations() : MutableSet<Location> {
         println("....  Finding All Locations   ....")
-        val allLocations = locationRepository.findAll()
-        return allLocations.toMutableSet()
+        val allLocations = this.locationRepository.findAll()
         println("....  Found All Locations   ....")
+        return allLocations.toMutableSet()
     }
 
     /**

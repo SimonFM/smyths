@@ -16,6 +16,7 @@ buildscript {
         spring_transaction = '0.7.6'
         geo_json = '1.1'
         bouncy_castle_version = '1.56'
+        docker = '1.2'
     }
     repositories {
         mavenCentral()
@@ -25,14 +26,17 @@ buildscript {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath "org.springframework.boot:spring-boot-gradle-plugin:$spring_boot_version"
         classpath "com.github.kittinunf.fuel:fuel:$fuel_version"
+        classpath "se.transmode.gradle:gradle-docker:$docker"
     }
 }
+group = 'springio'
 
 apply plugin: 'java'
 apply plugin: 'kotlin'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin: 'org.springframework.boot'
+apply plugin: 'docker'
 
 jar {
     baseName = 'smyths'
@@ -82,4 +86,16 @@ dependencies {
     // Test Things
     testCompile "org.springframework.boot:spring-boot-starter-test"
     testCompile "org.springframework.restdocs:spring-restdocs-mockmvc:1.1.1.RELEASE"
+}
+
+task buildDocker(type: Docker, dependsOn: build) {
+    push = true
+    applicationName = jar.baseName
+    dockerfile = file('src/main/docker/Dockerfile')
+    doFirst {
+        copy {
+            from jar
+            into stageDir
+        }
+    }
 }

@@ -1,6 +1,5 @@
 package com.nintendont.smyths.web.services
 
-import com.nintendont.smyths.utils.http.HttpHandler
 import com.nintendont.smyths.data.schema.*
 import com.nintendont.smyths.data.schema.responses.CheckProductResponse
 import com.nintendont.smyths.utils.Constants
@@ -18,17 +17,26 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.Gson
 import com.nintendont.smyths.data.repository.*
 import com.nintendont.smyths.data.schema.responses.SearchQueryResponse
+import com.nintendont.smyths.utils.exceptions.HttpServiceException
 import org.jsoup.nodes.Element
 // TODO: Multi threaded syncing.
 
 @Service open class ProductService {
 
-    private val httpHandler : HttpHandler = HttpHandler()
+    @Autowired lateinit var httpService : HttpService
     @Autowired lateinit var productRepository : SmythsProductRepository
     @Autowired lateinit var brandRepository : SmythsBrandRepository
     @Autowired lateinit var listTypeRepository : SmythsListTypeRepository
     @Autowired lateinit var categoryRepository : SmythsCategoryRepository
     @Autowired lateinit var linkRepository : SmythsLinkRepository
+
+    /* When a product url has a product, but has failed for some reason
+    * we need to store that url and try again later.
+    * Possible retries include:
+    *        - Read Time Out
+    *        - Invalid JSON (usually " for a toy height)
+    */
+    private val failedProductsUrls : MutableList<String> = mutableListOf()
 
     /**
      * Method to query the database for products similar to the query
@@ -37,7 +45,7 @@ import org.jsoup.nodes.Element
      */
     fun searchForProducts(query : String) : SearchQueryResponse {
         println("------ Searching for products with name like $query -------")
-        val products = productRepository.searchForProducts(query)
+        val products = this.productRepository.searchForProducts(query)
         val productsAsJson : String =  Gson().toJson(products).toString()
         val searchQueryResponse : SearchQueryResponse = SearchQueryResponse(message = "Successfully retrieved Products",
                                                                             error = "None",
@@ -51,7 +59,6 @@ import org.jsoup.nodes.Element
      * @param productId - The id of the product we want to ask about
      * @param storeId - The storeId we want ask in.
      * @return Response from Smyths in a nice to read json format
-     * TODO: Make JSONObject a data class.
      */
     fun checkProductAvailability(productId: String, storeId: String) : JSONObject {
         println("_____ Checking product availability for productId: $productId and storeId: $storeId ____")
@@ -61,7 +68,7 @@ import org.jsoup.nodes.Element
         val params : MutableList<Pair<String,Any>> = mutableListOf()
         params.add(product)
         params.add(store)
-        val response: Document = httpHandler.post(SMYTHS_STOCK_CHECKER_URL, params)
+        val response: Document = this.httpService.post(SMYTHS_STOCK_CHECKER_URL, params)
         val inStoreStatusElement : Elements = response.select("div#inStoreStatus")
         val inStoreStatus : String = inStoreStatusElement.text()
 
@@ -83,14 +90,28 @@ import org.jsoup.nodes.Element
      */
     fun syncAllProducts() : MutableSet<Product> {
         println("*-*-*- Started Syncing All Products -*-*-*")
-        val links = linkRepository.findAll()
-        val products = mutableSetOf<Product>()
+        val links = this.linkRepository.findAll()
+        var products : MutableSet<Product> = mutableSetOf<Product>()
 
         for (link in links){
-            val productsFromUrl = fetchForUrl(url = link.url)
+            val productsFromUrl : MutableSet<Product> = fetchForUrl(url = link.url)
             products.addAll(productsFromUrl)
         }
         println("*-*-*- Finished Syncing All Products -*-*-*")
+        println("*-*-*- Attempting Retry for failed Products -*-*-*")
+        val retryProducts : MutableSet<Product> = fetchProducts(this.failedProductsUrls)
+        products.addAll(retryProducts)
+        failedProductsUrls.clear()
+        println("*-*-*- Finished Retry for failed Products -*-*-*")
+        return products
+    }
+
+    private fun fetchProducts(urls : MutableList<String>) : MutableSet<Product>{
+        val products : MutableSet<Product> = mutableSetOf<Product>()
+        for (url in urls){
+            val productsFromUrl : MutableSet<Product> = fetchForUrl(url = url)
+            products.addAll(productsFromUrl)
+        }
         return products
     }
 
@@ -104,7 +125,7 @@ import org.jsoup.nodes.Element
      */
     fun getAllProducts( start: Int, end : Int) : Iterable<Product> {
         println("*-*-*- Starting range ($start -> $end) Products -*-*-*")
-        val products = productRepository.findAllInRange(start, end)
+        val products = this.productRepository.findAllInRange(start, end)
 
         println("*-*-*- Ending range ($start -> $end) Products -*-*-*")
         return products
@@ -118,52 +139,67 @@ import org.jsoup.nodes.Element
     fun fetchForUrl(url: String) : MutableSet<Product> {
         val products : MutableSet<Product> = mutableSetOf()
         println("Fetching products for url: $url")
-        val response: Document = httpHandler.get("$url?${Constants.VIEW_ALL}", mutableListOf())
-        val containsProducts : Boolean = response.getElementsByAttribute(Constants.DATA_EGATYPE).size > 0
-        if (containsProducts){
-            val data = response.getElementsByAttribute(Constants.DATA_EGATYPE)[0]
-            val pageOfProducts = data.children()
-            for (elem in pageOfProducts) {
-                val productData = elem.attr(Constants.DATA_EVENT)
-                if(productData.isNotBlank()){
-                    if(isValidJson(productData.toString())){
-                        val json = JSONObject(productData)
+        try{
+            val response: Document = this.httpService.get("$url?${Constants.VIEW_ALL}", mutableListOf())
+            val containsProducts : Boolean = response.getElementsByAttribute(Constants.DATA_EGATYPE).size > 0
+            if (containsProducts){
+                val data = response.getElementsByAttribute(Constants.DATA_EGATYPE)[0]
+                val pageOfProducts = data.children()
+                for (elem in pageOfProducts) {
+                    val productData = elem.attr(Constants.DATA_EVENT)
+                    if(productData.isNotBlank()){
+                        if(isValidJson(productData.toString())){
+                            val json = JSONObject(productData)
 
-                        val productUrl : String = getProductUrl(elem)
-                        val smythsStockCheckerId : String = getProductStockCheckId(productUrl)
+                            val productUrl : String = getProductUrl(elem)
+                            val smythsStockCheckerId : String = getProductStockCheckId(productUrl)
 
-                        val listing : String = getListing(json)
-                        val listingId: String = makeListing(listing)
+                            val listing : String = getListing(json)
+                            val listingId: String = makeListing(listing)
 
-                        val productBrand : String = getBrand(json)
-                        val brandId: String = makeBrand(productBrand)
-                        val brandIdToUse : String? = if(brandId.isNullOrBlank()) null else brandId
-                        val categoryName : String = getCategory(json)
-                        val categoryId: String = makeCategory(categoryName)
+                            val productBrand : String = getBrand(json)
+                            val brandId: String = makeBrand(productBrand)
+                            val brandIdToUse : String? = if(brandId.isNullOrBlank()) null else brandId
+                            val categoryName : String = getCategory(json)
+                            val categoryId: String = makeCategory(categoryName)
 
-                        val smythsProductId : String = getSmythsId(json)
-                        val existingProduct : Product = productRepository.find(smythsProductId)
+                            val smythsProductId : String = getSmythsId(json)
+                            val existingProduct : Product = this.productRepository.find(smythsProductId)
 
-                        val productName : String = getProductName(json)
-                        val productPriceAsString : String = getProductPrice(json)
-                        val productPriceAsBigDecimal : BigDecimal = Utils.stringToBigDecimal(productPriceAsString)
+                            val productName : String = getProductName(json)
+                            val productPriceAsString : String = getProductPrice(json)
+                            val productPriceAsBigDecimal : BigDecimal = Utils.stringToBigDecimal(productPriceAsString)
 
-                        val newProduct: Product = makeNewProduct(brandIdToUse, categoryId,
-                                                                 listingId, productName,
-                                                                 productPriceAsBigDecimal, smythsProductId,
-                                                                 smythsStockCheckerId, productUrl)
-                        val productToAdd : Product = determineProduct(newProduct, existingProduct)
-                        if(productToAdd.id.isNotBlank()){
-                            products.add(productToAdd)
+                            val newProduct: Product = makeNewProduct(brandIdToUse, categoryId,
+                                    listingId, productName,
+                                    productPriceAsBigDecimal, smythsProductId,
+                                    smythsStockCheckerId, productUrl)
+                            val productToAdd : Product = determineProduct(newProduct, existingProduct)
+                            if(productToAdd.id.isNotBlank()){
+                                products.add(productToAdd)
+                            }
+                        } else {
+                            println("Not Valid JSON: $productData")
+                            addToFailedProductsUrl(url)
                         }
-                    } else {
-                        println("Not Valid JSON: $productData")
                     }
                 }
             }
+        } catch (failedRequest: HttpServiceException){
+            addToFailedProductsUrl(url)
         }
         println("--- Finished fetching products for url: $url ---")
         return products
+    }
+
+    /**
+     * Adds the urls of the products it failed to sync so we can retry later.
+     */
+    private fun addToFailedProductsUrl(urlToRetry: String){
+        if(urlToRetry.isNotBlank() && !this.failedProductsUrls.contains(urlToRetry)){
+            this.failedProductsUrls.add(urlToRetry)
+            println("Added $urlToRetry to failedProduct Set")
+        }
     }
 
     /**
@@ -174,7 +210,7 @@ import org.jsoup.nodes.Element
     private fun getProductStockCheckId(url : String) : String {
         var stockCheckId : String = ""
 
-        val productPageResponse: Document = httpHandler.get(url, mutableListOf())
+        val productPageResponse: Document = this.httpService.get(url, mutableListOf())
         val inputs = productPageResponse.select("input#ProductId")
         for(input in inputs){
             if(stockCheckId.isBlank()){
@@ -228,13 +264,13 @@ import org.jsoup.nodes.Element
                                                       || updatePrice || updateSmythsId || updateSmythsStockId
                                                       || updateURL)
             if(shouldUpdate){
-                productRepository.update(existingProduct)
+                this.productRepository.update(existingProduct)
                 println("- Updated Product: $existingProduct")
             }
             return existingProduct
         } else {
             if(newProduct.id.isNotBlank()){
-                productRepository.create(newProduct)
+                this.productRepository.create(newProduct)
                 println("- Created Product: $newProduct")
             }
             return newProduct
@@ -259,12 +295,12 @@ import org.jsoup.nodes.Element
     private fun makeCategory(categoryName: String): String {
         var categoryId: String = makeUUID()
         if (categoryName.isNotBlank()) {
-            val existingCategory: Category = categoryRepository.find(categoryName)
+            val existingCategory: Category = this.categoryRepository.find(categoryName)
             if (existingCategory.name.isNotBlank()) {
                 categoryId = existingCategory.id
             } else {
                 val category: Category = Category(name = categoryName, id = categoryId)
-                categoryRepository.create(category)
+                this.categoryRepository.create(category)
                 println("- Made new category: $category....")
             }
         }
@@ -280,12 +316,12 @@ import org.jsoup.nodes.Element
         var brandId: String = ""
         if (productBrand.isNotBlank()) {
             brandId = makeUUID()
-            val existingBrand: Brand = brandRepository.find(productBrand)
+            val existingBrand: Brand = this.brandRepository.find(productBrand)
             if (existingBrand.name.isNotBlank()) {
                 brandId = existingBrand.id
             } else {
                 val brand: Brand = Brand(name = productBrand, id = brandId)
-                brandRepository.create(brand)
+                this.brandRepository.create(brand)
                 println("- Made new brand: $brand....")
             }
         }
@@ -300,12 +336,12 @@ import org.jsoup.nodes.Element
     private fun makeListing(listing: String): String {
         var listingId: String = makeUUID()
         if (listing.isNotBlank()) {
-            val existingType: ListType = listTypeRepository.find(listing)
+            val existingType: ListType = this.listTypeRepository.find(listing)
             if (existingType.name.isNotBlank()) {
                 listingId = existingType.id
             } else {
                 val list: ListType = ListType(name = listing, id = listingId)
-                listTypeRepository.create(list)
+                this.listTypeRepository.create(list)
                 println("- Made new listing: $list....")
             }
         }

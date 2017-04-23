@@ -14,9 +14,8 @@ import org.json.JSONObject
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
 
-@RestController
+@RestController @RequestMapping("/product")
 @CrossOrigin(origins = arrayOf("http://localhost:4200"))
-@RequestMapping("/product")
 class ProductController {
     //
     @Autowired private lateinit var productService: ProductService
@@ -41,7 +40,7 @@ class ProductController {
     @PostMapping("/available/allLocations")
     fun checkProductAllLocations(@RequestBody checkProductAllLocationsRequest : CheckProductAllLocationsRequest): String {
         val locationsAvailability : MutableList<JSONObject> = mutableListOf()
-        val allLocations : MutableSet<Location> = locationService.getLocations()
+        val allLocations : MutableSet<Location> = this.locationService.getLocations()
         val productId : String? = checkProductAllLocationsRequest.productId
 
         if(!productId.isNullOrBlank()){
@@ -63,7 +62,7 @@ class ProductController {
         val validHighRange : Boolean =  highRange != null && highRange > 0
 
         if(validLowRange && validHighRange) {
-            productsList = productService.getAllProducts(lowRange as Int,  highRange as Int)
+            productsList = this.productService.getAllProducts(lowRange as Int,  highRange as Int)
         }
         return objectToString(productsList)
     }
@@ -81,14 +80,14 @@ class ProductController {
         val productId : String? = checkProductRequest.productId
         val storeId : String? = checkProductRequest.storeId
         if(!productId.isNullOrBlank() && !storeId.isNullOrBlank()){
-            response = productService.checkProductAvailability(productId.toString(), storeId.toString())
+            response = this.productService.checkProductAvailability(productId.toString(), storeId.toString())
         }
         return response
     }
 
     private fun makeSearchResponse(searchQuery : String?, validSearchQuery : Boolean) : SearchQueryResponse{
         if(validSearchQuery) {
-            return productService.searchForProducts(searchQuery.toString())
+            return this.productService.searchForProducts(searchQuery.toString())
         }
         return SearchQueryResponse(message = "Invalid parameters for 'search'",
                                    error = "Null Query",

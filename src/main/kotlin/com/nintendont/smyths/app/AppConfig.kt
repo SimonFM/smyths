@@ -16,6 +16,7 @@ open class AppConfig {
     @Bean open fun linkService() = LinkService()
     @Bean open fun locationService() = LocationService()
     @Bean open fun jobService() = JobService()
+    @Bean open fun httpService() = HttpService()
 
     /**
      * Repository Beans

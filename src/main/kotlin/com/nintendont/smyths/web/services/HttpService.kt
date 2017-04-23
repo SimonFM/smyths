@@ -1,4 +1,4 @@
-package com.nintendont.smyths.utils.http
+package com.nintendont.smyths.web.services
 
 import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.Request
@@ -6,19 +6,14 @@ import com.github.kittinunf.fuel.core.Response
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.httpPost
 import com.github.kittinunf.result.Result
-import com.google.gson.Gson
+import com.nintendont.smyths.utils.exceptions.SmythsException
 import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.safety.Whitelist
+import org.springframework.stereotype.Service
 
-/**
- * @author Simon
- * A simple HttpClient that can do post and get requests based off the Fuel library
- */
-@Deprecated("Switched to HttpService bean instead.")
-class HttpHandler{
-
+@Service open class HttpService {
     /**
      * @author Simon
      * Sends a POST
@@ -26,7 +21,7 @@ class HttpHandler{
      * @param params - The response we got back.
      * @return A map of the response.
      */
-    fun post ( url : String, params : List<Pair<String, Any?>>) : Document{
+    fun post ( url : String, params : List<Pair<String, Any?>>) : Document {
         var headers : Pair<String, String> = Pair("Content-Type", "application/x-www-form-urlencoded")
 
         val (request, response, result) = url.httpPost(params)
@@ -56,7 +51,7 @@ class HttpHandler{
         return responseAsDocument
     }
 
-    private fun formatResponseAsHTML(request : Request, response: Response, result: Result<String, FuelError> ) : Document{
+    private fun formatResponseAsHTML(request : Request, response: Response, result: Result<String, FuelError>) : Document {
         var document : Document = Document("")
         val (data, error) = result
         val success : Boolean = response.httpStatusCode == 200 && data != null && data.length >= 0
@@ -65,12 +60,14 @@ class HttpHandler{
             //printSuccess(request, response, result)
             document = prettyPrintHtml(data)
         } else {
-            printError("HTML -> REQUEST: $request with error: $error")
+            val errorMessage : String = "HTML -> REQUEST: $request with error: $error"
+            printError(errorMessage)
+            throw SmythsException(errorMessage, Throwable(errorMessage))
         }
         return document
     }
 
-    private fun formatResponseAsJson(request : Request, response: Response, result: Result<String, FuelError> ) : JSONObject{
+    private fun formatResponseAsJson(request : Request, response: Response, result: Result<String, FuelError>) : JSONObject {
         val (data, error) = result
         val success : Boolean = response.httpStatusCode == 200 && data != null && data.length >= 0
         val json : JSONObject = JSONObject(data)
@@ -112,7 +109,7 @@ class HttpHandler{
      * Formats and prints the html response in a pretty way ;)
      * @param data - The string to format.
      */
-    private fun prettyPrintHtml(data : String?) : Document{
+    private fun prettyPrintHtml(data : String?) : Document {
         val doc : Document = Jsoup.parse(data)
         doc.outputSettings().prettyPrint(false)
         val settings : Document.OutputSettings = Document.OutputSettings()

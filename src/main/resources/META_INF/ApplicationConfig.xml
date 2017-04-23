@@ -8,6 +8,7 @@
     <bean id="linkService" class="com.nintendont.smyths.web.services.LinkService"/>
     <bean id="locationService" class="com.nintendont.smyths.web.services.LocationService"/>
     <bean id="jobService" class="com.nintendont.smyths.web.services.JobService"/>
+    <bean id="httpService" class="com.nintendont.smyths.web.services.HttpService"/>
 
     <!--Repositories-->
     <bean id="productRepository" class="com.nintendont.smyths.data.repository.SmythsProductRepository" />
@@ -19,6 +20,7 @@
     <!--RestControllers-->
     <bean id="catalogueController" class="com.nintendont.smyths.web.controllers.CatalogueController"/>
     <bean id="productController" class="com.nintendont.smyths.web.controllers.ProductController"/>
+    <bean id="locationController" class="com.nintendont.smyths.web.controllers.LocationController"/>
 
     <!--Applications-->
     <bean id="application" class="com.nintendont.smyths.app.SmythsApp"/>
