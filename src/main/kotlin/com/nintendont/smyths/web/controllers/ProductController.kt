@@ -28,8 +28,8 @@ class ProductController {
      */
     @PostMapping("/available")
     fun checkProduct(@RequestBody checkProductRequest: CheckProductRequest): String {
-        val products : JSONObject = checkProductAvailability(checkProductRequest)
-        return objectToString(products)
+        val products : String = checkProductAvailability(checkProductRequest)
+        return products
     }
 
     /**
@@ -39,7 +39,7 @@ class ProductController {
      */
     @PostMapping("/available/allLocations")
     fun checkProductAllLocations(@RequestBody checkProductAllLocationsRequest : CheckProductAllLocationsRequest): String {
-        val locationsAvailability : MutableList<JSONObject> = mutableListOf()
+        val locationsAvailability : MutableList<String> = mutableListOf()
         val allLocations : MutableSet<Location> = this.locationService.getLocations()
         val productId : String? = checkProductAllLocationsRequest.productId
 
@@ -70,13 +70,13 @@ class ProductController {
     @PostMapping("/search")
     fun searchProducts(@RequestBody searchProductsRequest: SearchProductsRequest): String {
         val searchQuery : String? = searchProductsRequest.search
-        val validSearchQuery : Boolean = !searchQuery.isNullOrBlank()
-        val searchQueryResponse : SearchQueryResponse = makeSearchResponse(searchQuery, validSearchQuery)
+        val locationId : String? = searchProductsRequest.locationId
+        val searchQueryResponse : SearchQueryResponse = makeSearchResponse(searchQuery, locationId)
         return objectToString(searchQueryResponse)
     }
 
-    private fun checkProductAvailability(checkProductRequest: CheckProductRequest) : JSONObject{
-        var response = JSONObject()
+    private fun checkProductAvailability(checkProductRequest: CheckProductRequest) : String{
+        var response = "{}"
         val productId : String? = checkProductRequest.productId
         val storeId : String? = checkProductRequest.storeId
         if(!productId.isNullOrBlank() && !storeId.isNullOrBlank()){
@@ -85,12 +85,15 @@ class ProductController {
         return response
     }
 
-    private fun makeSearchResponse(searchQuery : String?, validSearchQuery : Boolean) : SearchQueryResponse{
-        if(validSearchQuery) {
-            return this.productService.searchForProducts(searchQuery.toString())
+    private fun makeSearchResponse(searchQuery : String?, locationId : String?) : SearchQueryResponse{
+        if(!searchQuery.isNullOrBlank() && !locationId.isNullOrEmpty()) {
+            return this.productService.searchForProducts(searchQuery.toString(), locationId.toString())
+        } else if(!searchQuery.isNullOrBlank()) {
+            return this.productService.searchForProducts(searchQuery.toString(), null)
         }
+        val emptyListOfStatus : MutableList<String> = mutableListOf<String>()
         return SearchQueryResponse(message = "Invalid parameters for 'search'",
-                                   error = "Null Query",
-                                   products = objectToString(listOf<Product>()))
+                                   error = "Null Query", status = emptyListOfStatus,
+                products = objectToString(listOf<Product>()))
     }
 }

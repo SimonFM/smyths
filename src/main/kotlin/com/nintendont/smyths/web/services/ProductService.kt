@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.Gson
 import com.nintendont.smyths.data.repository.*
 import com.nintendont.smyths.data.schema.responses.SearchQueryResponse
+import com.nintendont.smyths.utils.Utils.objectToString
 import com.nintendont.smyths.utils.exceptions.HttpServiceException
 import org.jsoup.nodes.Element
 // TODO: Multi threaded syncing.
@@ -43,15 +44,29 @@ import org.jsoup.nodes.Element
      * @param query - The query we're going to ask the DB for
      * @return A SearchQueryResponse
      */
-    fun searchForProducts(query : String) : SearchQueryResponse {
+    fun searchForProducts(query : String, locationId : String?) : SearchQueryResponse {
         println("------ Searching for products with name like $query -------")
         val products = this.productRepository.searchForProducts(query)
         val productsAsJson : String =  Gson().toJson(products).toString()
+        val status : MutableList<String> = checkAllProductAvailability(products, locationId)
+
         val searchQueryResponse : SearchQueryResponse = SearchQueryResponse(message = "Successfully retrieved Products",
-                                                                            error = "None",
+                                                                            error = "None", status = status,
                                                                             products = productsAsJson)
         println("------ Finished searching for products with name like $query -------")
         return searchQueryResponse
+    }
+
+    fun checkAllProductAvailability(products : MutableSet<Product>, locationId: String?) : MutableList<String>{
+        val status : MutableList<String> = mutableListOf<String>()
+
+        if(!locationId.isNullOrEmpty()){
+            products.forEach {
+                val productStatusInLocation = checkProductAvailability(it.smythsStockCheckId.toString(), locationId.toString())
+                status.add(objectToString(productStatusInLocation))
+            }
+        }
+        return status
     }
 
     /***
@@ -60,7 +75,7 @@ import org.jsoup.nodes.Element
      * @param storeId - The storeId we want ask in.
      * @return Response from Smyths in a nice to read json format
      */
-    fun checkProductAvailability(productId: String, storeId: String) : JSONObject {
+    fun checkProductAvailability(productId: String, storeId: String) : String {
         println("_____ Checking product availability for productId: $productId and storeId: $storeId ____")
 
         val product : Pair<String, Any> = Pair("productId", productId)
@@ -73,15 +88,22 @@ import org.jsoup.nodes.Element
         val inStoreStatus : String = inStoreStatusElement.text()
 
         val canClickCollectElement : Elements = response.select("div#canClickCollect")
-        val canClickCollect : Boolean = canClickCollectElement.text() == "True"
+        var canClickCollect : Boolean = false
+        if(canClickCollectElement.text().isNotBlank()){
+            canClickCollect = canClickCollectElement.text().toLowerCase().toBoolean()
+        }
 
         val estimatedTimeElement : Elements = response.select("span.pre-order")
         val inStock : Elements = response.select("span.in-stock")
         val message : String = if (estimatedTimeElement.size > 0) estimatedTimeElement.text() else inStock.text()
-        val checkProductResponse : CheckProductResponse = CheckProductResponse(message = message, inStoreStatus = inStoreStatus, canCollect = canClickCollect)
+        val checkProductResponse : CheckProductResponse = CheckProductResponse(message = message,
+                                                                               inStoreStatus = inStoreStatus,
+                                                                               locationId = storeId,
+                                                                               productId = productId,
+                                                                               canCollect = canClickCollect)
 
         println("___ Finished product availability for productId: $productId and storeId: $storeId ___")
-        return JSONObject(checkProductResponse)
+        return objectToString(checkProductResponse)
     }
 
     /***
