@@ -24,7 +24,7 @@ import com.nintendont.smyths.data.schema.responses.GetAllLocationsResponse
     * Generates the locations from smyths.ie and stores them in the Location Table.
     * @return Set of Locations
     */
-    fun generateLocationsFromJson() : MutableSet<Location>{
+    fun generateLocationsFromJson() : GetAllLocationsResponse{
         println("Generating Locations....")
         val locationsResult = mutableSetOf<Location>()
         val params: MutableList<Pair<String, Any>> = mutableListOf()
@@ -37,13 +37,12 @@ import com.nintendont.smyths.data.schema.responses.GetAllLocationsResponse
                 val existingLocation : Location = locationRepository.find(location.name)
                 if(existingLocation.displayName.isNullOrEmpty()){
                     locationRepository.create(location = location)
-                    locationsResult.add(location)
                 } else {
-                    locationsResult.add(existingLocation)
+                    // update
                 }
             }
         }
-        return locationsResult
+        return locations
     }
 
     /***
