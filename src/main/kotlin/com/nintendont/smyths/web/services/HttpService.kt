@@ -6,6 +6,8 @@ import com.github.kittinunf.fuel.core.Response
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.httpPost
 import com.github.kittinunf.result.Result
+import com.google.gson.Gson
+import com.google.gson.JsonElement
 import com.nintendont.smyths.utils.exceptions.SmythsException
 import org.json.JSONObject
 import org.jsoup.Jsoup
@@ -22,7 +24,9 @@ import org.springframework.stereotype.Service
      * @return A map of the response.
      */
     fun post ( url : String, params : List<Pair<String, Any?>>) : Document {
-        var headers : Pair<String, String> = Pair("Content-Type", "application/x-www-form-urlencoded")
+        var headers : MutableMap<String, String> = mutableMapOf()
+        headers.put("Content-Type", "application/x-www-form-urlencoded")
+        headers.put("Content-Length", "2")
 
         val (request, response, result) = url.httpPost(params)
                 .header(headers)
@@ -46,7 +50,7 @@ import org.springframework.stereotype.Service
     }
 
     fun getJson (url : String, params: List<Pair<String, Any?>>): JSONObject {
-        val (request, response, result) = url.httpGet().responseString() // result is Result<String, FuelError>
+        val (request, response, result) = url.httpGet(params).responseString() // result is Result<String, FuelError>
         val responseAsDocument: JSONObject = formatResponseAsJson(request, response, result)
         return responseAsDocument
     }

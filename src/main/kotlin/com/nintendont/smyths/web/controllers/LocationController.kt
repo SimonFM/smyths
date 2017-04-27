@@ -18,7 +18,7 @@ class LocationController {
      */
     @GetMapping("/all")
     fun getLocations(): String {
-        val links = this.locationService.getLocations()
+        val links = this.locationService.generateLocationsFromJson()
         return objectToString(links)
     }
 }

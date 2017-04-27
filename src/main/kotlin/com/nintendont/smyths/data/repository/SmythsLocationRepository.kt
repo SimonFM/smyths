@@ -4,10 +4,13 @@ import com.nintendont.smyths.data.Locations
 import com.nintendont.smyths.data.Products
 import com.nintendont.smyths.data.interfaces.CrudRepository
 import com.nintendont.smyths.data.schema.Location
+import com.nintendont.smyths.data.schema.Opening
+import com.nintendont.smyths.utils.Utils.makeEmptyLocation
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.statements.UpdateBuilder
 import org.springframework.stereotype.Repository
+import java.math.BigDecimal
 import javax.transaction.Transactional
 
 interface LocationRepository : CrudRepository<Location, Long>
@@ -15,18 +18,16 @@ interface LocationRepository : CrudRepository<Location, Long>
 @Repository("locationRepository")
 @Transactional
 open class SmythsLocationRepository : LocationRepository{
+
+    override fun createTable() = SchemaUtils.create(Locations)
+
     override fun update(location: Location): Location {
-        val query : Int = Locations.update({ Locations.smythsId.eq(location.id)} , body = {
+        val query : Int = Locations.update({ Locations.name.eq(location.name)} , body = {
             toRow(location)
-            it[Locations.name] = location.name
-            it[Locations.id] = location.id
-            it[Locations.smythsId] = location.smythsId
         })
         val result = query.run {}
         return location
     }
-
-    override fun createTable() = SchemaUtils.create(Locations)
 
     override fun create(location: Location): Location {
         Locations.insert(toRow(location))
@@ -39,9 +40,9 @@ open class SmythsLocationRepository : LocationRepository{
 
     override fun find(name : String): Location {
         val query : Query = Locations.select{Locations.name.eq(name)}
-        var location : Location = Location("", "", "")
+        var location : Location = makeEmptyLocation()
         query.forEach {
-            location = Location(name = it[Locations.name], id =it[Locations.id], smythsId = it[Locations.smythsId])
+            location = fromRow(it)
         }
         return location
     }
@@ -52,9 +53,25 @@ open class SmythsLocationRepository : LocationRepository{
 
     private fun toRow(location: Location): Locations.(UpdateBuilder<*>) -> Unit = {
         it[name] = location.name
-        it[id] = location.id
-        it[smythsId] = location.smythsId
+        it[displayName] = location.displayName
+        it[storeMapUrl] = location.storeMapUrl
+        it[longitude] = location.longitude
+        it[latitude] = location.latitude
+        it[line1] = location.line1
+        it[line2] = location.line2
+        it[phone] = location.phone
+        it[postalCode] = location.postalCode
+        it[mapImage] = location.mapImage
+        it[formattedDistance] = location.formattedDistance
+        it[town] = location.town
+        it[country] = location.country
+        it[image] = location.image
+        it[url] = location.url
     }
 
-    private fun fromRow(r: ResultRow) = Location(r[Locations.name], r[Locations.id], r[Locations.smythsId])
+    private fun fromRow(r: ResultRow) = Location(name=r[Locations.name], storeMapUrl = r[Locations.storeMapUrl],
+            displayName = r[Locations.displayName], longitude = r[Locations.longitude], latitude = r[Locations.latitude],
+            line1 = r[Locations.line1], line2 = r[Locations.line2], phone = r[Locations.phone], postalCode = r[Locations.postalCode],
+            mapImage = r[Locations.mapImage], formattedDistance = r[Locations.formattedDistance], town = r[Locations.town],
+            country= r[Locations.country], image = r[Locations.image], url = r[Locations.url])
 }

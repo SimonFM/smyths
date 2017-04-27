@@ -2,8 +2,8 @@ package com.nintendont.smyths.utils
 
 object Constants {
 
-    val SMYTHS_BASE_URL : String = "http://www.smythstoys.com/ie/en-ie"
-    val SMYTHS_LOCATIONS_URL : String = "${SMYTHS_BASE_URL}/storelocator/"
+    val SMYTHS_BASE_URL : String = "https://www.smythstoys.com/ie/en-ie"
+    val SMYTHS_LOCATIONS_URL : String = "${SMYTHS_BASE_URL}/store-finder/getAllStores"
     val SMYTHS_STOCK_CHECKER_URL : String = "${SMYTHS_BASE_URL}/product/productinstorestock/"
 
     val VIEW_ALL : String = "viewAll=True"

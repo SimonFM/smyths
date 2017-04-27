@@ -6,6 +6,7 @@ import com.nintendont.smyths.data.schema.requests.CheckProductAllLocationsReques
 import com.nintendont.smyths.data.schema.requests.CheckProductRequest
 import com.nintendont.smyths.data.schema.requests.GetProductsRequest
 import com.nintendont.smyths.data.schema.requests.SearchProductsRequest
+import com.nintendont.smyths.data.schema.responses.CheckProductResponse
 import com.nintendont.smyths.data.schema.responses.SearchQueryResponse
 import com.nintendont.smyths.utils.Utils.objectToString
 import com.nintendont.smyths.web.services.LocationService
@@ -28,8 +29,8 @@ class ProductController {
      */
     @PostMapping("/available")
     fun checkProduct(@RequestBody checkProductRequest: CheckProductRequest): String {
-        val products : String = checkProductAvailability(checkProductRequest)
-        return products
+        val products : CheckProductResponse = checkProductAvailability(checkProductRequest)
+        return objectToString(products)
     }
 
     /**
@@ -39,13 +40,14 @@ class ProductController {
      */
     @PostMapping("/available/allLocations")
     fun checkProductAllLocations(@RequestBody checkProductAllLocationsRequest : CheckProductAllLocationsRequest): String {
-        val locationsAvailability : MutableList<String> = mutableListOf()
+        val locationsAvailability : MutableList<CheckProductResponse> = mutableListOf()
         val allLocations : MutableSet<Location> = this.locationService.getLocations()
         val productId : String? = checkProductAllLocationsRequest.productId
 
         if(!productId.isNullOrBlank()){
             allLocations.forEach { currentLocation : Location ->
-                val checkProductRequest = CheckProductRequest(storeId = currentLocation.smythsId, productId = productId)
+                //TODO
+                val checkProductRequest = CheckProductRequest(storeId = "", productId = productId)
                 val productAvailability = checkProductAvailability(checkProductRequest)
                 locationsAvailability.add(productAvailability)
             }
@@ -75,10 +77,11 @@ class ProductController {
         return objectToString(searchQueryResponse)
     }
 
-    private fun checkProductAvailability(checkProductRequest: CheckProductRequest) : String{
-        var response = "{}"
+    private fun checkProductAvailability(checkProductRequest: CheckProductRequest) : CheckProductResponse{
         val productId : String? = checkProductRequest.productId
         val storeId : String? = checkProductRequest.storeId
+        var response : CheckProductResponse = CheckProductResponse(productId = productId.toString(), locationId = storeId.toString(),
+                                                                   canCollect = false, message = "ERROR", inStoreStatus = "Unable to get in store status")
         if(!productId.isNullOrBlank() && !storeId.isNullOrBlank()){
             response = this.productService.checkProductAvailability(productId.toString(), storeId.toString())
         }
@@ -86,14 +89,14 @@ class ProductController {
     }
 
     private fun makeSearchResponse(searchQuery : String?, locationId : String?) : SearchQueryResponse{
-        if(!searchQuery.isNullOrBlank() && !locationId.isNullOrEmpty()) {
+        if(!searchQuery.isNullOrBlank() && !locationId.isNullOrEmpty() && locationId.toString().toInt() >= 0) {
             return this.productService.searchForProducts(searchQuery.toString(), locationId.toString())
         } else if(!searchQuery.isNullOrBlank()) {
             return this.productService.searchForProducts(searchQuery.toString(), null)
         }
-        val emptyListOfStatus : MutableList<String> = mutableListOf<String>()
-        return SearchQueryResponse(message = "Invalid parameters for 'search'",
-                                   error = "Null Query", status = emptyListOfStatus,
-                products = objectToString(listOf<Product>()))
+        val emptyListOfStatus : MutableList<CheckProductResponse> = mutableListOf<CheckProductResponse>()
+        val emptyListOfProducts : MutableList<Product> = mutableListOf<Product>()
+        return SearchQueryResponse(message = "Invalid parameters for 'search'", error = "Null Query",
+                                   status = emptyListOfStatus, products = emptyListOfProducts)
     }
 }

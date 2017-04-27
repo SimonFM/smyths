@@ -3,11 +3,17 @@ package com.nintendont.smyths.web.services
 import com.nintendont.smyths.data.repository.*
 import com.nintendont.smyths.data.schema.*
 import com.nintendont.smyths.utils.Constants.SMYTHS_LOCATIONS_URL
+import org.json.JSONArray
+import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.select.Elements
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.util.*
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import com.nintendont.smyths.data.schema.responses.GetAllLocationsResponse
+
 
 @Service open class LocationService {
 
@@ -15,34 +21,25 @@ import java.util.*
     @Autowired lateinit var locationRepository : SmythsLocationRepository
 
     /**
-     * Generates the locations from smyths.ie and stores them in the Location Table.
-     * @return Set of Locations
-     */
-    fun generateLocations() : MutableSet<Location>{
+    * Generates the locations from smyths.ie and stores them in the Location Table.
+    * @return Set of Locations
+    */
+    fun generateLocationsFromJson() : MutableSet<Location>{
         println("Generating Locations....")
         val locationsResult = mutableSetOf<Location>()
         val params: MutableList<Pair<String, Any>> = mutableListOf()
-        val response: Document = this.httpService.get(SMYTHS_LOCATIONS_URL, params)
-        val locationsDiv : Elements = response.select("div#store-locator")
-        val locationsResultsDiv : Elements = locationsDiv.select("div.store-locator-results")
-        val locationsContent : Elements = locationsResultsDiv.select("div.StoreContent")
-        val allLocations : Elements = locationsContent.select("div.store-locator-list-all")
-        val regions : Elements = allLocations.select("div.region-info")
+        val response: JSONObject = this.httpService.getJson(SMYTHS_LOCATIONS_URL, params)
+        val allLocationsResponse = object : TypeToken<GetAllLocationsResponse>() {}.type
+        val locations : GetAllLocationsResponse = Gson().fromJson(response.toString(), allLocationsResponse)
 
-        for(region in regions){
-            val locations : Elements = region.select("[href]")
-            for(location in locations){
-                val locationName = location.text()
-                val locationId = location.attr("data-storeid")
-                val newLocation : Location = Location(name =locationName , id = makeUUID(), smythsId = locationId )
-                val existingLocation : Location = this.locationRepository.find(locationName)
-                if (existingLocation.name.isNotBlank()){
+        locations.data.forEach { region ->
+            region.regionPos.forEach { location ->
+                val existingLocation : Location = locationRepository.find(location.name)
+                if(existingLocation.displayName.isNullOrEmpty()){
+                    locationRepository.create(location = location)
+                    locationsResult.add(location)
+                } else {
                     locationsResult.add(existingLocation)
-                    println("Found existing Location for location: $existingLocation")
-                } else{
-                    locationRepository.create(newLocation)
-                    locationsResult.add(newLocation)
-                    println("New Location Saved: $newLocation")
                 }
             }
         }

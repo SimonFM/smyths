@@ -56,7 +56,7 @@ class CatalogueController {
      */
     @RequestMapping("/sync/locations")
     fun getLocations(): String {
-        val links = this.locationService.generateLocations()
+        val links = this.locationService.generateLocationsFromJson()
         return objectToString(links)
     }
 }

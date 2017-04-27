@@ -47,23 +47,23 @@ import org.jsoup.nodes.Element
     fun searchForProducts(query : String, locationId : String?) : SearchQueryResponse {
         println("------ Searching for products with name like $query -------")
         val products = this.productRepository.searchForProducts(query)
-        val productsAsJson : String =  Gson().toJson(products).toString()
-        val status : MutableList<String> = checkAllProductAvailability(products, locationId)
-
+        val productsAsListOfString : MutableList<String> = mutableListOf()
+        products.forEach { productsAsListOfString.add(objectToString(it)) }
+        val status : MutableList<CheckProductResponse> = checkAllProductAvailability(products, locationId)
         val searchQueryResponse : SearchQueryResponse = SearchQueryResponse(message = "Successfully retrieved Products",
                                                                             error = "None", status = status,
-                                                                            products = productsAsJson)
+                                                                            products = products.toMutableList())
         println("------ Finished searching for products with name like $query -------")
         return searchQueryResponse
     }
 
-    fun checkAllProductAvailability(products : MutableSet<Product>, locationId: String?) : MutableList<String>{
-        val status : MutableList<String> = mutableListOf<String>()
+    fun checkAllProductAvailability(products : MutableSet<Product>, locationId: String?) : MutableList<CheckProductResponse>{
+        val status : MutableList<CheckProductResponse> = mutableListOf<CheckProductResponse>()
 
         if(!locationId.isNullOrEmpty()){
             products.forEach {
                 val productStatusInLocation = checkProductAvailability(it.smythsStockCheckId.toString(), locationId.toString())
-                status.add(objectToString(productStatusInLocation))
+                status.add(productStatusInLocation)
             }
         }
         return status
@@ -75,7 +75,7 @@ import org.jsoup.nodes.Element
      * @param storeId - The storeId we want ask in.
      * @return Response from Smyths in a nice to read json format
      */
-    fun checkProductAvailability(productId: String, storeId: String) : String {
+    fun checkProductAvailability(productId: String, storeId: String) : CheckProductResponse {
         println("_____ Checking product availability for productId: $productId and storeId: $storeId ____")
 
         val product : Pair<String, Any> = Pair("productId", productId)
@@ -103,7 +103,7 @@ import org.jsoup.nodes.Element
                                                                                canCollect = canClickCollect)
 
         println("___ Finished product availability for productId: $productId and storeId: $storeId ___")
-        return objectToString(checkProductResponse)
+        return checkProductResponse
     }
 
     /***

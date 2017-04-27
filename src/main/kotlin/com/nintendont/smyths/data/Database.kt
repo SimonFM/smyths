@@ -1,5 +1,6 @@
 package com.nintendont.smyths.data
 
+import com.nintendont.smyths.data.schema.Opening
 import org.jetbrains.exposed.sql.*
 
 object Products : Table() {
@@ -36,7 +37,20 @@ object Links : Table() {
 }
 
 object Locations : Table() {
-    var id = text("id").primaryKey()
-    var name = text("name")
-    var smythsId = text("smythsId")
+    var name = text("name").primaryKey()
+    var url = text("url")
+    var displayName = text("displayName")
+    var phone = text("phone")
+    var formattedDistance = text("formattedDistance")
+    var line1 = text("line1")
+    var line2 = text("line2")
+    var town = text("town")
+    var country = text("country")
+    var postalCode = text("postalCode")
+    var latitude = decimal("latitude", 10, 8)
+    var longitude = decimal("longitude", 10, 8)
+  //  var openings : MutableList<Opening>
+    var mapImage = text("mapImage")
+    var image = text("image")
+    var storeMapUrl = text("storeMapUrl")
 }
