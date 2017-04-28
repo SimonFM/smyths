@@ -67,11 +67,25 @@ open class SmythsLocationRepository : LocationRepository{
         it[country] = location.country
         it[image] = location.image
         it[url] = location.url
+        it[openingsId] = location.openingsId
     }
 
-    private fun fromRow(r: ResultRow) = Location(name=r[Locations.name], storeMapUrl = r[Locations.storeMapUrl],
-            displayName = r[Locations.displayName], longitude = r[Locations.longitude], latitude = r[Locations.latitude],
-            line1 = r[Locations.line1], line2 = r[Locations.line2], phone = r[Locations.phone], postalCode = r[Locations.postalCode],
-            mapImage = r[Locations.mapImage], formattedDistance = r[Locations.formattedDistance], town = r[Locations.town],
-            country= r[Locations.country], image = r[Locations.image], url = r[Locations.url])
+    private fun fromRow(r: ResultRow) =
+            Location(name = r[Locations.name],
+                     storeMapUrl = r[Locations.storeMapUrl],
+                     displayName = r[Locations.displayName],
+                     longitude = r[Locations.longitude],
+                     latitude = r[Locations.latitude],
+                     line1 = r[Locations.line1],
+                     line2 = r[Locations.line2],
+                     phone = r[Locations.phone],
+                     postalCode = r[Locations.postalCode],
+                     mapImage = r[Locations.mapImage],
+                     formattedDistance = r[Locations.formattedDistance],
+                     town = r[Locations.town],
+                     country= r[Locations.country],
+                     image = r[Locations.image],
+                     url = r[Locations.url],
+                     openingsId = r[Locations.openingsId],
+                     openings = mapOf())
 }

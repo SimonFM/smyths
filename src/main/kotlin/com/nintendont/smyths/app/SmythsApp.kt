@@ -35,12 +35,14 @@ open class SmythsApp {
 
     @Bean open fun init(productRepository: SmythsProductRepository, listTypeRepository: SmythsListTypeRepository,
                         categoryRepository: SmythsCategoryRepository, brandRepository: SmythsBrandRepository,
-                        linkRepository: SmythsLinkRepository, locationRepository: SmythsLocationRepository) = CommandLineRunner {
+                        linkRepository: SmythsLinkRepository, locationRepository: SmythsLocationRepository,
+                        openingsRepository : SmythsOpeningsRepository) = CommandLineRunner {
 
         listTypeRepository.createTable()
         categoryRepository.createTable()
         brandRepository.createTable()
         linkRepository.createTable()
+        openingsRepository.createTable()
         locationRepository.createTable()
         productRepository.createTable()
     }

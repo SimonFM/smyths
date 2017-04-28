@@ -1,5 +1,7 @@
 package com.nintendont.smyths.web.services
 
+import com.beust.klaxon.json
+import com.github.salomonbrys.kotson.toJsonArray
 import com.nintendont.smyths.data.repository.*
 import com.nintendont.smyths.data.schema.*
 import com.nintendont.smyths.utils.Constants.SMYTHS_LOCATIONS_URL
@@ -11,14 +13,17 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.util.*
 import com.google.gson.Gson
+import com.google.gson.internal.LinkedTreeMap
 import com.google.gson.reflect.TypeToken
 import com.nintendont.smyths.data.schema.responses.GetAllLocationsResponse
+import kotlin.collections.HashMap
 
 
 @Service open class LocationService {
 
     @Autowired lateinit var httpService : HttpService
     @Autowired lateinit var locationRepository : SmythsLocationRepository
+    @Autowired lateinit var openingsRepository : SmythsOpeningsRepository
 
     /**
     * Generates the locations from smyths.ie and stores them in the Location Table.
@@ -26,19 +31,29 @@ import com.nintendont.smyths.data.schema.responses.GetAllLocationsResponse
     */
     fun generateLocationsFromJson() : GetAllLocationsResponse{
         println("Generating Locations....")
-        val locationsResult = mutableSetOf<Location>()
         val params: MutableList<Pair<String, Any>> = mutableListOf()
         val response: JSONObject = this.httpService.getJson(SMYTHS_LOCATIONS_URL, params)
-        val allLocationsResponse = object : TypeToken<GetAllLocationsResponse>() {}.type
-        val locations : GetAllLocationsResponse = Gson().fromJson(response.toString(), allLocationsResponse)
+        val getAllLocationsResponseType = object : TypeToken<GetAllLocationsResponse>() {}.type
+        val locations : GetAllLocationsResponse = Gson().fromJson(response.toString(), getAllLocationsResponseType)
 
         locations.data.forEach { region ->
             region.regionPos.forEach { location ->
                 val existingLocation : Location = locationRepository.find(location.name)
                 if(existingLocation.displayName.isNullOrEmpty()){
+                    val openings : Map<String, String>? = location.openings
+                    val listOfIds : MutableSet<String> = mutableSetOf<String>()
+                    openings?.forEach { opening ->
+                        val openingsId = makeUUID()
+                        val dayTimePair : Pair<String, String> = opening.toPair()
+                        val openingToSave : Opening = Opening(day = dayTimePair.first, time = dayTimePair.second, id = openingsId)
+                        openingsRepository.create(openingToSave)
+                        listOfIds.add(openingsId)
+                    }
+                    location.openingsId = listOfIds.toJsonArray().toString()
                     locationRepository.create(location = location)
                 } else {
                     // update
+                    locationRepository.update(location)
                 }
             }
         }

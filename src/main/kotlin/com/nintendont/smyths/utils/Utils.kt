@@ -23,9 +23,35 @@ object Utils{
     }
 
     fun makeEmptyLocation(): Location {
-        val openings = mutableListOf<Opening>()
-        return Location(name = "", storeMapUrl = "", displayName = "", line1 = "", line2 = "", postalCode = "",
-                url = "", mapImage = "", image = "", country = "", town = "",
-                latitude = BigDecimal.ZERO, longitude = BigDecimal.ZERO, formattedDistance = "", phone = "")
+        return Location(name = "",
+                        storeMapUrl = "",
+                        displayName = "",
+                        line1 = "",
+                        line2 = "",
+                        postalCode = "",
+                        url = "",
+                        mapImage = "",
+                        image = "",
+                        country = "",
+                        town = "",
+                        latitude = BigDecimal.ZERO,
+                        longitude = BigDecimal.ZERO,
+                        formattedDistance = "",
+                        phone = "",
+                        openingsId = "",
+                        openings = mapOf())
+    }
+
+    fun makeEmptyOpening(): Opening {
+        return Opening(id = "",
+                       time = "",
+                       day = "")
+//                       Mon = "",
+//                       Tue = "",
+//                       Wed = "",
+//                       Thu = "",
+//                       Fri = "",
+//                       Sat = "",
+//                       Sun = "")
     }
 }
