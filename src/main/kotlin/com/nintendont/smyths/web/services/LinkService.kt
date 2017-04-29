@@ -4,14 +4,21 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.gson.Gson
 import com.nintendont.smyths.data.repository.SmythsLinkRepository
 import com.nintendont.smyths.data.schema.*
+import com.nintendont.smyths.data.schema.responses.GenerateLinksResponse
 import com.nintendont.smyths.utils.Constants
+import com.nintendont.smyths.utils.Constants.SMYTHS_BASE_URL
 import org.jsoup.nodes.Document
+import org.jsoup.select.Elements
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.io.IOException
 import java.util.*
 
 @Service open class LinkService {
+
+    enum class categoryType {
+        NAV_BAR, SUB_CATEGORY, CATEGORY
+    }
 
     @Autowired lateinit var httpService : HttpService
     @Autowired lateinit var linkRepository : SmythsLinkRepository
@@ -28,102 +35,84 @@ import java.util.*
      * Generates the Links from smyths.ie and stores them in the Links Table.
      * @return Set of Links
      */
-    fun generateLinks() : MutableSet<Link>{
+    fun generateLinks() : GenerateLinksResponse {
         println("Generating Links....")
-        val links = mutableSetOf<Link>()
         val params: MutableList<Pair<String, Any>> = mutableListOf()
         val response: Document = httpService.get(Constants.SMYTHS_BASE_URL, params)
-        val menuItems = response.select("li.menu-item")
-        val popupItems = menuItems.select("[aria-haspopup=\"false\"]")
-        val listOfLinks = popupItems.select("[href]")
-        for (e in listOfLinks){
-            val url : String = e.attr("abs:href")
-            if(url.isNotBlank()){
-                var existingLink : Link = this.linkRepository.find(url)
-                val subLinks : String = generateSubLinks(url, 1)
-                if (existingLink.url.isNotBlank()){
-                    if(subLinks.equals(existingLink.links)){
-                        val tempLink = existingLink
-                        tempLink.links = subLinks
-                        existingLink = this.linkRepository.update(tempLink)
-                    }
-                    if(existingLink.id.isNotBlank()){
-                        links.add((existingLink))
-                        println("Found existing link for url: $existingLink")
-                    }
-                } else{
-                    val link: Link = Link(url = url, id = makeUUID(), links = subLinks)
-                    this.linkRepository.create(link)
-                    links.add((link))
-                    println("New Link Saved: $link")
+        val navBar = response.select("ul.navbar-nav")[2]
+        val topCategories = navBar.select("li.col-md-15")
+        val subCategories = navBar.select("li.dropdown-header")
+        val categories1 = navBar.select("li.col-sm-6")
+        val categories2 = navBar.select("li.col-sm-3")
+        val topCategoriesLinks : Set<Link> = getCategoryLinks(topCategories, categoryType.NAV_BAR)
+        val subCategoriesLinks : Set<Link> = getCategoryLinks(subCategories, categoryType.SUB_CATEGORY)
+        val categoriesLinks1 : Set<Link> = getCategoryLinks(categories1, categoryType.CATEGORY)
+        val categoriesLinks2 : Set<Link> = getCategoryLinks(categories2, categoryType.CATEGORY)
+        println("*-*-*- Finished generating Links. -*-*-*")
+        var links = categoriesLinks1.toMutableSet().union (categoriesLinks2.toMutableSet())
+        links =  links.union(topCategoriesLinks.toMutableSet().union(subCategoriesLinks.toMutableSet()))
+        saveLinks(links)
+        val responseToSend : GenerateLinksResponse = GenerateLinksResponse(links = links,
+                                                                           message = "Successfully generated Links for url",
+                                                                           error = "")
+        return responseToSend
+    }
+
+    private fun saveLinks(linksToSave : Set<Link>) : Boolean {
+        println(".....Saving Links.....")
+        linksToSave.forEach { link -> linkRepository.create(link = link) }
+        println(".....Links Saved.....")
+        return true
+    }
+
+    /**
+     *
+     */
+    private fun getCategoryLinks(categories: Elements, category: categoryType) : Set<Link> {
+        var links : Set<Link> = mutableSetOf<Link>()
+        categories.forEach { li ->
+            when(category){
+                categoryType.CATEGORY -> {
+                    val a = li.select("[href]")
+                    val categoryLinks = makeCategoryLinks(a)
+                    links = links.union(categoryLinks)
                 }
+                categoryType.SUB_CATEGORY -> {
+                    val a = li.select("[href]")
+                    val categoryLinks = makeCategoryLinks(a)
+                    links = links.union(categoryLinks)
+                    val specialCategories = li.parent().attributes().get("href")
+                    val specialCategoryLinks: MutableSet<Link> = mutableSetOf<Link>()
+                    if (specialCategories.isNotEmpty()) {
+                        val newLink: Link = Link(name = li.text(), url = SMYTHS_BASE_URL + specialCategories, id = makeUUID())
+                        specialCategoryLinks.add(newLink)
+                    }
+                    links = links.union(specialCategoryLinks)
+                }
+                categoryType.NAV_BAR -> {
+                    val a = li.select("a.dropdown-toggle").select("[href]")
+                    val navBarCategories = makeCategoryLinks(a)
+                    links = links.union(navBarCategories)
+                }
+
             }
         }
-        println("*-*-*- Finished generating Links. -*-*-*")
         return links
     }
 
-    /**
-     * Generates the sub links for every link in the database.
-     * @return Json string of the urls.
+    /***
+     * Makes a set of links to add
      */
-    private fun generateSubLinks(url : String, startingPage : Int) : String {
-        println("Generating sub links for url: $url....")
-
-        var page : Int = startingPage
-        var hasMoreLinksToGet : Boolean = true
-        val subLinks  = mutableSetOf<Link>()
-        while(hasMoreLinksToGet){
-            val filteredUrl = filterUrl(url)
-            val urlToGet = "$filteredUrl?${Constants.VIEW_ALL}&${Constants.PAGE}=$page"
-            val params : MutableList<Pair<String,Any>> = mutableListOf()
-
-            val response : Document = this.httpService.get(urlToGet, params)
-
-            if (response.getElementsByAttribute(Constants.DATA_EGATYPE).isNotEmpty()){
-                val data = response.getElementsByAttribute(Constants.DATA_EGATYPE)[0]
-                val dataProducts = data.children()
-                if(dataProducts.isNotEmpty()){
-                    val subLink : Link = Link(url = urlToGet, id = makeUUID(), links = "")
-                    subLinks.add(subLink)
-                    page++
-                    println("Adding New page for $url, pageCount : $page")
-                } else {
-                    hasMoreLinksToGet = false
-                }
-                println("$url: page count $page & has more links? $hasMoreLinksToGet")
-            } else {
-                hasMoreLinksToGet = false
+    private fun makeCategoryLinks( a : Elements) : MutableSet<Link> {
+        val links : MutableSet<Link> = mutableSetOf<Link>()
+        a.forEach {
+            val linkName = it.text()
+            if(linkName.isNotBlank()){
+                val newLink : Link = Link(name = linkName, url = SMYTHS_BASE_URL + a.attr("href"), id = makeUUID())
+                links.add(newLink)
             }
         }
-        val newJson = Gson().toJson(subLinks)
-        println("******* Finished generating sub links for url: $url *******")
-        return if(isValidJson(newJson)) newJson.toString() else ""
-    }
-
-    private fun filterUrl(url : String) : String {
-        var urlToReturn = url
-
-        when (url) {
-            this.sonyConsoleProblemUrl -> urlToReturn = this.validSonyConsoleUrl
-            this.xboxOneProblemUrl -> urlToReturn = this.validXboxConsoleUrl
-        }
-        return urlToReturn
-    }
-
-    /**
-     * Checks whether or not json is valid
-     * @param json - the json to test
-     * @return True if valid, False if not
-     */
-    private fun isValidJson(json : String): Boolean{
-        try {
-            val mapper = ObjectMapper()
-            mapper.readTree(json)
-            return true
-        } catch (e: IOException) {
-            return false
-        }
+        return links
     }
     /**
      * Makes a unique identifier
