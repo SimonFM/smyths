@@ -32,7 +32,7 @@ object Brands : Table() {
 object Links : Table() {
     var id  = text("id").primaryKey()
     var url = text("url")
-    var links = text("links")
+    var name = text("name")
 }
 
 object Openings : Table(){

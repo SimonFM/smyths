@@ -19,16 +19,8 @@ open class SmythsLinkRepository : LinkRepository {
 
     override fun update(item: Link): Link {
         val linkToUpdate : Link = find(item.url)
-        val linksAsString : String = linkToUpdate.links
         try{
-            val jsonObject = JSONObject(linksAsString)
-            jsonObject.append("values", item.url)
-            var newJson = Gson().toJson(linksAsString)
-            linkToUpdate.links = newJson.toString()
-
-            val query : Int = Links.update({ Links.id.eq(linkToUpdate.id) }, body = {
-                it[links] = newJson.toString()
-            })
+            val query : Int = Links.update({ Links.id.eq(linkToUpdate.id) }, body = {})
             query.run {}
             return linkToUpdate
         } catch (e :Exception){
@@ -51,7 +43,7 @@ open class SmythsLinkRepository : LinkRepository {
         val query : Query = Links.select{Links.url.eq(url)}
         var link : Link = Link("", "", "")
         query.forEach {
-            link = Link(it[Links.url], it[Links.id], it[Links.links])
+            link = fromRow(it)
         }
         return link
     }
@@ -63,8 +55,10 @@ open class SmythsLinkRepository : LinkRepository {
     private fun toRow(link: Link): Links.(UpdateBuilder<*>) -> Unit = {
         it[url] = link.url
         it[id] = link.id
-        it[links] = link.links
+        it[name] = link.name
     }
 
-    private fun fromRow(r: ResultRow) = Link(r[Links.url], r[Links.id], r[Links.links])
+    private fun fromRow(r: ResultRow) = Link(r[Links.url],
+                                             r[Links.id],
+                                             r[Links.name])
 }

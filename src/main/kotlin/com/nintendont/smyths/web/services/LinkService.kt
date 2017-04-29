@@ -1,7 +1,5 @@
 package com.nintendont.smyths.web.services
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.google.gson.Gson
 import com.nintendont.smyths.data.repository.SmythsLinkRepository
 import com.nintendont.smyths.data.schema.*
 import com.nintendont.smyths.data.schema.responses.GenerateLinksResponse
@@ -11,7 +9,6 @@ import org.jsoup.nodes.Document
 import org.jsoup.select.Elements
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
-import java.io.IOException
 import java.util.*
 
 @Service open class LinkService {
