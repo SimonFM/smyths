@@ -31,8 +31,11 @@ open class SmythsLinkRepository : LinkRepository {
     override fun createTable() = SchemaUtils.create(Links)
 
     override fun create(link: Link): Link {
-        Links.insert(toRow(link))
-        return link
+        val existingLink : Link = find(link.url)
+        if(existingLink.name.isEmpty()){
+            Links.insert(toRow(link))
+        }
+        return existingLink
     }
 
     override fun findAll(): Iterable<Link> {

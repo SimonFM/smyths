@@ -3,6 +3,8 @@ package com.nintendont.smyths.web.controllers
 import com.google.gson.Gson
 import com.nintendont.smyths.data.schema.Product
 import com.nintendont.smyths.data.schema.requests.FetchProductsRequest
+import com.nintendont.smyths.data.schema.responses.GenerateLinksResponse
+import com.nintendont.smyths.data.schema.responses.GetAllLocationsResponse
 import com.nintendont.smyths.utils.Utils
 import com.nintendont.smyths.utils.Utils.objectToString
 import com.nintendont.smyths.web.services.ProductService
@@ -22,13 +24,13 @@ class CatalogueController {
      * @author Simon
      * The /product endpoint to sync all products
      */
-    @RequestMapping("/sync/products")
-    fun getProduct(): String {
+    @RequestMapping("/sync/products", produces = arrayOf("application/json"))
+    fun getProduct() : MutableSet<Product> {
         val products = this.productService.syncAllProducts()
-        return objectToString(products)
+        return products
     }
 
-    @RequestMapping("/sync/product", method = arrayOf(RequestMethod.POST))
+    @RequestMapping("/sync/product", method = arrayOf(RequestMethod.POST), produces = arrayOf("application/json"))
     fun fetchProductsFromUrl(@RequestBody fetchProductsRequest: FetchProductsRequest): String {
         var products : MutableSet<Product> = mutableSetOf()
         val url : String? = fetchProductsRequest.url
@@ -43,10 +45,10 @@ class CatalogueController {
      *
      * The link endpoint to fetch all links
      */
-    @RequestMapping("/sync/links")
-    fun getLinks(): String {
+    @RequestMapping("/sync/links", produces = arrayOf("application/json"))
+    fun getLinks(): GenerateLinksResponse {
         val links = this.linkService.generateLinks()
-        return objectToString(links)
+        return links
     }
 
     /**
@@ -54,9 +56,8 @@ class CatalogueController {
      *
      * The location endpoint to fetch all locations
      */
-    @RequestMapping("/sync/locations")
-    fun getLocations(): String {
-        val links = this.locationService.generateLocationsFromJson()
-        return objectToString(links)
+    @RequestMapping("/sync/locations", produces = arrayOf("application/json"))
+    fun getLocations(): GetAllLocationsResponse {
+        return this.locationService.generateLocationsFromJson()
     }
 }

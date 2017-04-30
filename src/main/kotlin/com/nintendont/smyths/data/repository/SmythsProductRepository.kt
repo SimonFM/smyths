@@ -23,13 +23,13 @@ open class SmythsProductRepository : ProductRepository{
     }
 
     override fun update(product: Product): Product {
-        val query : Int = Products.update({Products.smythsId.eq(product.smythsId)} , body = {
-            it[smythsId] = product.smythsId
-            it[smythsStockCheckId] = product.smythsStockCheckId
+        val query : Int = Products.update({Products.smythsCode.eq(product.smythsCode)} , body = {
+            it[smythsCode] = product.smythsCode
+            it[smythsStockCheckCode] = product.smythsStockCheckCode
             it[name] = product.name
             it[price] = product.price
             it[categoryId] = product.categoryId
-            it[listId] = product.listTypeId
+           // it[listId] = product.listTypeId
             it[brandId] = product.brandId
             it[url] = product.url
         })
@@ -61,9 +61,9 @@ open class SmythsProductRepository : ProductRepository{
         return selectedProducts
     }
 
-    override fun find(id : String): Product {
-        var product : Product = Product("", 0, 0, "", BigDecimal.ZERO , "","", "", "")
-        Products.select{ Products.smythsId.eq(id.toLong())}.forEach {
+    override fun find(name : String): Product {
+        var product : Product = Product("", 0, 0, "", BigDecimal.ZERO , "","","")
+        Products.select{ Products.name.eq(name)}.forEach {
             product = fromRow(it)
         }
         return product
@@ -75,24 +75,23 @@ open class SmythsProductRepository : ProductRepository{
 
     private fun toRow(product: Product): Products.(UpdateBuilder<*>) -> Unit = {
         it[id] = product.id
-        it[smythsId] = product.smythsId
-        it[smythsStockCheckId] = product.smythsStockCheckId
+        it[smythsCode] = product.smythsCode
+        it[smythsStockCheckCode] = product.smythsStockCheckCode
         it[name] = product.name
         it[price] = product.price
         it[categoryId] = product.categoryId
-        it[listId] = product.listTypeId
+       // it[listId] = product.listTypeId
         it[brandId] = product.brandId
         it[url] = product.url
     }
 
     private fun fromRow(r: ResultRow) =
-            Product( r[Products.id],
-                     r[Products.smythsId],
-                     r[Products.smythsStockCheckId],
-                     r[Products.name],
-                     r[Products.price],
-                     r[Products.categoryId],
-                     r[Products.listId],
-                     r[Products.brandId],
-                     r[Products.url])
+            Product( id = r[Products.id],
+                     smythsCode = r[Products.smythsCode],
+                     smythsStockCheckCode = r[Products.smythsStockCheckCode],
+                     name = r[Products.name],
+                     price = r[Products.price],
+                     categoryId = r[Products.categoryId],
+                     brandId =r[Products.brandId],
+                     url = r[Products.url])
 }

@@ -2,24 +2,20 @@ package com.nintendont.smyths.web.services
 
 import com.nintendont.smyths.data.schema.*
 import com.nintendont.smyths.data.schema.responses.CheckProductResponse
-import com.nintendont.smyths.utils.Constants
 import com.nintendont.smyths.utils.Constants.SMYTHS_STOCK_CHECKER_URL
-import com.nintendont.smyths.utils.Utils
-import org.json.JSONObject
 import org.jsoup.nodes.Document
 import org.jsoup.select.Elements
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.util.*
-import java.io.IOException
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.google.gson.Gson
 import com.nintendont.smyths.data.repository.*
 import com.nintendont.smyths.data.schema.responses.SearchQueryResponse
+import com.nintendont.smyths.utils.Utils
+import com.nintendont.smyths.utils.Utils.makeEmptyProduct
 import com.nintendont.smyths.utils.Utils.objectToString
 import com.nintendont.smyths.utils.exceptions.HttpServiceException
-import org.jsoup.nodes.Element
+
 // TODO: Multi threaded syncing.
 
 @Service open class ProductService {
@@ -62,7 +58,7 @@ import org.jsoup.nodes.Element
 
         if(!locationId.isNullOrEmpty()){
             products.forEach {
-                val productStatusInLocation = checkProductAvailability(it.smythsStockCheckId.toString(), locationId.toString())
+                val productStatusInLocation = checkProductAvailability(it.smythsStockCheckCode.toString(), locationId.toString())
                 status.add(productStatusInLocation)
             }
         }
@@ -113,7 +109,7 @@ import org.jsoup.nodes.Element
     fun syncAllProducts() : MutableSet<Product> {
         println("*-*-*- Started Syncing All Products -*-*-*")
         val links = this.linkRepository.findAll()
-        var products : MutableSet<Product> = mutableSetOf<Product>()
+        val products : MutableSet<Product> = mutableSetOf<Product>()
 
         for (link in links){
             val productsFromUrl : MutableSet<Product> = fetchForUrl(url = link.url)
@@ -162,52 +158,36 @@ import org.jsoup.nodes.Element
         val products : MutableSet<Product> = mutableSetOf()
         println("Fetching products for url: $url")
         try{
-            val response: Document = this.httpService.get("$url?${Constants.VIEW_ALL}", mutableListOf())
-            val containsProducts : Boolean = response.getElementsByAttribute(Constants.DATA_EGATYPE).size > 0
-            if (containsProducts){
-                val data = response.getElementsByAttribute(Constants.DATA_EGATYPE)[0]
-                val pageOfProducts = data.children()
-                for (elem in pageOfProducts) {
-                    val productData = elem.attr(Constants.DATA_EVENT)
-                    if(productData.isNotBlank()){
-                        if(isValidJson(productData.toString())){
-                            val json = JSONObject(productData)
+            val categoryPage: Document = this.httpService.get(url, mutableListOf())
+            val itemPanels : Elements = categoryPage.select("div.item-panel")
+            itemPanels.forEach { panel ->
+                val productName : String = panel.attr("data-name")
+                val productCode : String = panel.attr("data-code")
+                val productPrice : BigDecimal =  Utils.stringToBigDecimal(panel.attr("data-price"))
+                val productUrl : String = panel.children().last().attr("[href]")
+                val productCategoryId : String = makeCategory(panel.attr("data-category"))
+                val categoryIdToUse : String? = if(productCategoryId.isNullOrBlank()) null else productCategoryId
+                val productBrandId : String = makeBrand(panel.attr("data-brand"))
+                val brandIdToUse : String? = if(productBrandId.isNullOrBlank()) null else productBrandId
 
-                            val productUrl : String = getProductUrl(elem)
-                            val smythsStockCheckerId : String = getProductStockCheckId(productUrl)
+                val productListingId : String = ""
 
-                            val listing : String = getListing(json)
-                            val listingId: String = makeListing(listing)
-
-                            val productBrand : String = getBrand(json)
-                            val brandId: String = makeBrand(productBrand)
-                            val brandIdToUse : String? = if(brandId.isNullOrBlank()) null else brandId
-                            val categoryName : String = getCategory(json)
-                            val categoryId: String = makeCategory(categoryName)
-
-                            val smythsProductId : String = getSmythsId(json)
-                            val existingProduct : Product = this.productRepository.find(smythsProductId)
-
-                            val productName : String = getProductName(json)
-                            val productPriceAsString : String = getProductPrice(json)
-                            val productPriceAsBigDecimal : BigDecimal = Utils.stringToBigDecimal(productPriceAsString)
-
-                            val newProduct: Product = makeNewProduct(brandIdToUse, categoryId,
-                                    listingId, productName,
-                                    productPriceAsBigDecimal, smythsProductId,
-                                    smythsStockCheckerId, productUrl)
-                            val productToAdd : Product = determineProduct(newProduct, existingProduct)
-                            if(productToAdd.id.isNotBlank()){
-                                products.add(productToAdd)
-                            }
-                        } else {
-                            println("Not Valid JSON: $productData")
-                            addToFailedProductsUrl(url)
-                        }
-                    }
+                val existingProduct : Product = productRepository.find(name = productName)
+                val newProduct : Product = makeNewProduct(brandId = brandIdToUse, categoryId = categoryIdToUse, productName = productName,
+                                                          productPrice = productPrice, smythsCode = productCode, smythsStockCheckCode= "-1", url = productUrl)
+                val sameProductName = existingProduct.name == newProduct.name
+                val sameProductPrice = existingProduct.price == newProduct.price
+                if(existingProduct.name.isNotEmpty() && sameProductName && sameProductPrice){
+                    products.add(existingProduct)
+                } else {
+                    productRepository.create(newProduct)
+                    products.add(newProduct)
                 }
             }
+
+
         } catch (failedRequest: HttpServiceException){
+            println(failedRequest)
             addToFailedProductsUrl(url)
         }
         println("--- Finished fetching products for url: $url ---")
@@ -242,81 +222,15 @@ import org.jsoup.nodes.Element
         return if (stockCheckId.isNotBlank()) stockCheckId else "-1"
     }
 
-    /***
-     * Checks to see if a product is fresh or stale when we do a sync products call.
-     * @param newProduct - The product we already have
-     * @param existingProduct - The product we found online
-     * @return new or existing product.
-     */
-    private fun determineProduct(newProduct : Product, existingProduct : Product) : Product {
-        if(existingProduct.id.isNotBlank()){
-            val updatePrice : Boolean =  existingProduct.price.compareTo(newProduct.price) != 0
-            if(updatePrice){
-                existingProduct.price = newProduct.price
-            }
-            val updateName : Boolean = compareProductStrings(existingProduct.name, newProduct.name)
-            if(updateName){
-                existingProduct.name = newProduct.name
-            }
-            val updateURL : Boolean = compareProductStrings(existingProduct.url, newProduct.url)
-            if(updateURL){
-                existingProduct.url = newProduct.url
-            }
-            val updateCategory : Boolean = compareProductStrings(existingProduct.categoryId, newProduct.categoryId)
-            if(updateCategory){
-                existingProduct.categoryId = newProduct.categoryId
-            }
-            val updateListing : Boolean = compareProductStrings(existingProduct.listTypeId, newProduct.listTypeId)
-            if(updateListing){
-                existingProduct.listTypeId = newProduct.listTypeId
-            }
-            val updateBrand : Boolean = compareProductStrings(existingProduct.brandId, newProduct.brandId)
-            if(updateBrand){
-                existingProduct.brandId = newProduct.brandId
-            }
-            val updateSmythsId : Boolean = existingProduct.smythsId.compareTo(newProduct.smythsId) != 0
-            if(updateSmythsId){
-                existingProduct.smythsId = newProduct.smythsId
-            }
-            val updateSmythsStockId : Boolean = existingProduct.smythsStockCheckId.compareTo(newProduct.smythsStockCheckId) != 0
-            if(updateSmythsStockId){
-                existingProduct.smythsStockCheckId = newProduct.smythsStockCheckId
-            }
-            val shouldUpdate : Boolean = (updateBrand || updateCategory || updateListing || updateName
-                                                      || updatePrice || updateSmythsId || updateSmythsStockId
-                                                      || updateURL)
-            if(shouldUpdate){
-                this.productRepository.update(existingProduct)
-                println("- Updated Product: $existingProduct")
-            }
-            return existingProduct
-        } else {
-            if(newProduct.id.isNotBlank()){
-                this.productRepository.create(newProduct)
-                println("- Created Product: $newProduct")
-            }
-            return newProduct
-        }
-    }
-
-    /**
-     * Compares two strings. Needed as == was finicky...
-     * @param existingProduct - data to check on the existing product
-     * @param newProduct - data to check on the new product
-     * @return True if the same, False if different
-     */
-    private fun compareProductStrings(existingProduct: String?, newProduct: String?) : Boolean {
-        return !existingProduct.equals(newProduct)
-    }
-
     /**
      * Makes a new category with the given name or returns the existing one.
      * @param categoryName - The name of the category
      * @return New or Existing Category
      */
     private fun makeCategory(categoryName: String): String {
-        var categoryId: String = makeUUID()
+        var categoryId: String = ""
         if (categoryName.isNotBlank()) {
+            categoryId = makeUUID()
             val existingCategory: Category = this.categoryRepository.find(categoryName)
             if (existingCategory.name.isNotBlank()) {
                 categoryId = existingCategory.id
@@ -351,109 +265,32 @@ import org.jsoup.nodes.Element
     }
 
     /**
-     * Makes a new ListType with the given name or returns the existing one.
-     * @param listing - The name of the ListType
-     * @return New or Existing ListType
-     */
-    private fun makeListing(listing: String): String {
-        var listingId: String = makeUUID()
-        if (listing.isNotBlank()) {
-            val existingType: ListType = this.listTypeRepository.find(listing)
-            if (existingType.name.isNotBlank()) {
-                listingId = existingType.id
-            } else {
-                val list: ListType = ListType(name = listing, id = listingId)
-                this.listTypeRepository.create(list)
-                println("- Made new listing: $list....")
-            }
-        }
-        return listingId
-    }
-
-    /**
      * Makes a new Product with the given parameters.
      * @param categoryId - The id of the category
      * @param brandId - The id of the brand it is linked with
-     * @param listingId - The id of the listing id it is linked with
      * @param productName - The name of the product
-     * @param productPriceAsBigDecimal - The price of the product
-     * @param smythsProductId - The id smyths have in their db for the product.
-     * @param smythsStockCheckId - The id needed in order to make the stock check call.
+     * @param productPrice - The price of the product
+     * @param smythsCode - The id smyths have in their db for the product.
+     * @param smythsStockCheckCode - The id needed in order to make the stock check call.
      * @param url - The url the product is on.
      * @return New or Existing Category
      */
-    private fun makeNewProduct(brandId: String?, categoryId: String?, listingId: String?, productName: String,
-                               productPriceAsBigDecimal: BigDecimal, smythsProductId: String, smythsStockCheckId: String,
-                               url : String): Product {
+    private fun makeNewProduct(brandId: String?, categoryId: String?, productName: String, productPrice: BigDecimal,
+                               smythsCode: String, smythsStockCheckCode: String, url : String): Product {
         val productId : String = makeUUID()
         try {
-            return Product(id = productId,
-                    name = productName,
-                    price = productPriceAsBigDecimal,
-                    smythsId = smythsProductId.toLong(),
-                    smythsStockCheckId = smythsStockCheckId.toLong(),
-                    categoryId = categoryId,
-                    listTypeId = listingId,
-                    brandId = brandId,
-                    url = url)
+            return Product( id = productId,
+                            name = productName,
+                            price = productPrice,
+                            smythsCode = smythsCode.toLong(),
+                            smythsStockCheckCode = smythsStockCheckCode.toLong(),
+                            categoryId = categoryId,
+                            brandId = brandId,
+                            url = url )
         } catch (e : Exception){
-            return Product("", 0, 0, "", BigDecimal.ZERO , "","", "", "")
+            return makeEmptyProduct()
         }
     }
-
-    /**
-     * Makes a new category with the given name or returns the existing one.
-     * @param categoryName - The name of the category
-     * @return New or Existing Category
-     */
-    private fun getProductUrl(elem : Element) : String {
-        val url : String = elem.select("a.product-name").attr("href")
-        return if (url.isNotBlank()) url else ""
-    }
-
-
-    //TODO: Make these in to a builder class.
-    /**
-     * Gets the product Price from the JSON
-     * @param json - the json for the product.
-     * @return Empty string or the price.
-     */
-    private fun getProductPrice(json: JSONObject) = if (json.has(Constants.PRICE)) json.get(Constants.PRICE) as String else "0"
-
-    /**
-     * Gets the product Name from the JSON
-     * @param json - the json for the product.
-     * @return Empty string or the Name.
-     */
-    private fun getProductName(json: JSONObject) = if (json.has(Constants.PRODUCT_NAME)) json.get(Constants.PRODUCT_NAME) as String else ""
-
-    /**
-     * Gets the product smythId from the JSON
-     * @param json - the json for the product.
-     * @return -1 as a String or the smythsId.
-     */
-    private fun getSmythsId(json: JSONObject) = if (json.has(Constants.ID)) json.get(Constants.ID) as String else "-1"
-
-    /**
-     * Gets the category name from the JSON
-     * @param json - the json for the product.
-     * @return Empty string or the category name.
-     */
-    private fun getCategory(json: JSONObject) = if (json.has(Constants.CATEGORY_NAME)) json.get(Constants.CATEGORY_NAME) as String else ""
-
-    /**
-     * Gets the product Brand from the JSON
-     * @param json - the json for the product.
-     * @return Empty string or the Brand.
-     */
-    private fun getBrand(json: JSONObject) = if (json.has(Constants.BRAND)) json.get(Constants.BRAND) as String else ""
-
-    /**
-     * Gets the product ListType name from the JSON
-     * @param json - the json for the product.
-     * @return Empty string or the ListType name.
-     */
-    private fun getListing(json: JSONObject) = if (json.has(Constants.LIST)) json.get(Constants.LIST) as String else ""
 
     /**
      * Makes a unique identifier
@@ -461,20 +298,5 @@ import org.jsoup.nodes.Element
      */
     private fun makeUUID() : String {
        return UUID.randomUUID().toString()
-    }
-
-    /**
-     * Checks whether or not json is valid
-     * @param json - the json to test
-     * @return True if valid, False if not
-     */
-    private fun isValidJson(json : String): Boolean {
-        try {
-            val mapper = ObjectMapper()
-            mapper.readTree(json)
-            return true
-        } catch (e: IOException) {
-            return false
-        }
     }
 }

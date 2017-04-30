@@ -4,12 +4,11 @@ import org.jetbrains.exposed.sql.*
 
 object Products : Table() {
     var id = text("id").primaryKey()
-    var smythsId = long("smythsId")
-    var smythsStockCheckId = long("smythsStockCheckId")
+    var smythsCode = long("smythsCode")
+    var smythsStockCheckCode = long("smythsStockCheckCode").nullable()
     var name = varchar("name", 400) // changed to varchar for 'LIKE'
     var price = decimal("price", 10, 2)
     var categoryId = (text("categoryId") references Categories.id).nullable()
-    var listId = (text("listId") references ListTypes.id).nullable()
     var brandId = (text("brandId") references Brands.id).nullable()
     var url = text("url")
 }
@@ -39,13 +38,6 @@ object Openings : Table(){
     var id = text("openingsId").primaryKey()
     var day = text("day")
     var time = text("time")
-//    var mon = text("mon")
-//    var tue = text("tue")
-//    var wed = text("wed")
-//    var thu = text("thu")
-//    var fri = text("fri")
-//    var sat = text("sat")
-//    var sun = text("sun")
 }
 
 object Locations : Table() {

@@ -1,8 +1,10 @@
 package com.nintendont.smyths.utils
 
 import com.google.gson.Gson
+import com.nintendont.smyths.data.Products
 import com.nintendont.smyths.data.schema.Location
 import com.nintendont.smyths.data.schema.Opening
+import com.nintendont.smyths.data.schema.Product
 import java.math.BigDecimal
 
 object Utils{
@@ -40,6 +42,17 @@ object Utils{
                         phone = "",
                         openingsId = "",
                         openings = mapOf())
+    }
+
+    fun makeEmptyProduct() : Product{
+        return Product( id = "",
+                        smythsCode = 0,
+                        smythsStockCheckCode = 0,
+                        name = "",
+                        price = BigDecimal.ZERO ,
+                        categoryId = "",
+                        brandId = "",
+                        url = "")
     }
 
     fun makeEmptyOpening(): Opening {
