@@ -5,6 +5,7 @@ object Constants {
     val SMYTHS_BASE_URL : String = "https://www.smythstoys.com"
     val SMYTHS_LOCATIONS_URL : String = "${SMYTHS_BASE_URL}/store-finder/getAllStores"
     val SMYTHS_STOCK_CHECKER_URL : String = "${SMYTHS_BASE_URL}/product/productinstorestock/"
+    val SMYTHS_SEARCH_URL : String = "${SMYTHS_BASE_URL}/ie/en-ie/search/?text="
 
     val VIEW_ALL : String = "viewAll=True"
     val PAGE : String = "page"

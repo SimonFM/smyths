@@ -16,7 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
 
 @RestController @RequestMapping("/product")
-@CrossOrigin(origins = arrayOf("http://localhost:4200"))
+@CrossOrigin(origins = arrayOf("http://localhost:4200","*"))
 class ProductController {
     //
     @Autowired private lateinit var productService: ProductService
@@ -90,9 +90,9 @@ class ProductController {
 
     private fun makeSearchResponse(searchQuery : String?, locationId : String?) : SearchQueryResponse{
         if(!searchQuery.isNullOrBlank() && !locationId.isNullOrEmpty() && locationId.toString().toInt() >= 0) {
-            return this.productService.searchForProducts(searchQuery.toString(), locationId.toString())
+            return this.productService.searchFromSmythsWebsite(searchQuery.toString(), locationId.toString())
         } else if(!searchQuery.isNullOrBlank()) {
-            return this.productService.searchForProducts(searchQuery.toString(), null)
+            return this.productService.searchFromSmythsWebsite(searchQuery.toString(), null)
         }
         val emptyListOfStatus : MutableList<CheckProductResponse> = mutableListOf<CheckProductResponse>()
         val emptyListOfProducts : MutableList<Product> = mutableListOf<Product>()

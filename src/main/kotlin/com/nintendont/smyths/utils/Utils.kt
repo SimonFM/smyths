@@ -16,7 +16,7 @@ object Utils{
      */
     fun stringToBigDecimal(number : String ) : BigDecimal{
         val processedString = number.replace(",".toRegex(), "")
-        val stringAsBigDecimal = BigDecimal(processedString)
+        val stringAsBigDecimal = if(number.isNotBlank()) BigDecimal(processedString) else BigDecimal(-1)
         return stringAsBigDecimal
     }
 

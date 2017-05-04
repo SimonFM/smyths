@@ -51,8 +51,8 @@ import org.springframework.stereotype.Service
 
     fun getJson (url : String, params: List<Pair<String, Any?>>): JSONObject {
         val (request, response, result) = url.httpGet(params).responseString() // result is Result<String, FuelError>
-        val responseAsDocument: JSONObject = formatResponseAsJson(request, response, result)
-        return responseAsDocument
+        val json : JSONObject = formatResponseAsJson(request, response, result)
+        return json
     }
 
     private fun formatResponseAsHTML(request : Request, response: Response, result: Result<String, FuelError>) : Document {
@@ -74,7 +74,7 @@ import org.springframework.stereotype.Service
     private fun formatResponseAsJson(request : Request, response: Response, result: Result<String, FuelError>) : JSONObject {
         val (data, error) = result
         val success : Boolean = response.httpStatusCode == 200 && data != null && data.length >= 0
-        val json : JSONObject = JSONObject(data)
+        val json : JSONObject = if(data != null) JSONObject(data) else JSONObject()
 
         if (success) {
             //printSuccess(request, response, result)

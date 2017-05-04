@@ -18,7 +18,9 @@ open class SmythsProductRepository : ProductRepository{
     override fun createTable() = SchemaUtils.create(Products)
 
     override fun create(product: Product): Product {
-        Products.insert(toRow(product))
+        if(find(product.name).name.isNullOrBlank()){
+            Products.insert(toRow(product))
+        }
         return product
     }
 

@@ -35,7 +35,7 @@ class CatalogueController {
         var products : MutableSet<Product> = mutableSetOf()
         val url : String? = fetchProductsRequest.url
         if(!url.isNullOrBlank()){
-            products = this.productService.fetchForUrl(url.toString())
+            products = this.productService.fetchProductsFromUrl(url.toString(), false)
         }
         return objectToString(products)
     }

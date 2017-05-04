@@ -57,7 +57,7 @@ import java.util.*
 
     private fun saveLinks(linksToSave : Set<Link>) : Boolean {
         println(".....Saving Links.....")
-        linksToSave.forEach { link -> linkRepository.create(link = link) }
+        linksToSave.distinct().forEach { link -> linkRepository.create(link = link) }
         println(".....Links Saved.....")
         return true
     }

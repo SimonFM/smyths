@@ -11,10 +11,14 @@ import java.math.BigDecimal
 import java.util.*
 import com.nintendont.smyths.data.repository.*
 import com.nintendont.smyths.data.schema.responses.SearchQueryResponse
+import com.nintendont.smyths.utils.Constants
+import com.nintendont.smyths.utils.Constants.SMYTHS_SEARCH_URL
 import com.nintendont.smyths.utils.Utils
 import com.nintendont.smyths.utils.Utils.makeEmptyProduct
 import com.nintendont.smyths.utils.Utils.objectToString
 import com.nintendont.smyths.utils.exceptions.HttpServiceException
+import org.json.JSONObject
+import org.jsoup.Jsoup
 
 // TODO: Multi threaded syncing.
 
@@ -40,7 +44,27 @@ import com.nintendont.smyths.utils.exceptions.HttpServiceException
      * @param query - The query we're going to ask the DB for
      * @return A SearchQueryResponse
      */
-    fun searchForProducts(query : String, locationId : String?) : SearchQueryResponse {
+    fun searchFromSmythsWebsite(query : String, locationId : String?) : SearchQueryResponse {
+        println("------ Searching for products with name like $query -------")
+        val searchUrl : MutableList<String> = mutableListOf<String>()
+        val products = fetchProductsFromUrl("$SMYTHS_SEARCH_URL$query", true)
+        val productsAsListOfString : MutableList<String> = mutableListOf()
+        products.forEach { productsAsListOfString.add(objectToString(it)) }
+       // val status : MutableList<CheckProductResponse> = checkAllProductAvailability(products, locationId)
+        val searchQueryResponse : SearchQueryResponse = SearchQueryResponse(message = "Successfully retrieved Products",
+                                                                            error = "None",
+                                                                            status = mutableListOf(),
+                                                                            products = products.toMutableList())
+        println("------ Finished searching for products with name like $query -------")
+        return searchQueryResponse
+    }
+
+    /**
+     * Method to query the database for products similar to the query
+     * @param query - The query we're going to ask the DB for
+     * @return A SearchQueryResponse
+     */
+    fun searchForProductsInRepo(query : String, locationId : String?) : SearchQueryResponse {
         println("------ Searching for products with name like $query -------")
         val products = this.productRepository.searchForProducts(query)
         val productsAsListOfString : MutableList<String> = mutableListOf()
@@ -112,7 +136,7 @@ import com.nintendont.smyths.utils.exceptions.HttpServiceException
         val products : MutableSet<Product> = mutableSetOf<Product>()
 
         for (link in links){
-            val productsFromUrl : MutableSet<Product> = fetchForUrl(url = link.url)
+            val productsFromUrl : MutableSet<Product> = fetchProductsFromUrl(url = link.url, isSearch = false)
             products.addAll(productsFromUrl)
         }
         println("*-*-*- Finished Syncing All Products -*-*-*")
@@ -127,7 +151,7 @@ import com.nintendont.smyths.utils.exceptions.HttpServiceException
     private fun fetchProducts(urls : MutableList<String>) : MutableSet<Product>{
         val products : MutableSet<Product> = mutableSetOf<Product>()
         for (url in urls){
-            val productsFromUrl : MutableSet<Product> = fetchForUrl(url = url)
+            val productsFromUrl : MutableSet<Product> = fetchProductsFromUrl(url = url, isSearch = false)
             products.addAll(productsFromUrl)
         }
         return products
@@ -154,43 +178,88 @@ import com.nintendont.smyths.utils.exceptions.HttpServiceException
      * @param url - The Url that our product is on. The corresponds to the base page the product was found on.
      * @return all the products on that url.
      */
-    fun fetchForUrl(url: String) : MutableSet<Product> {
-        val products : MutableSet<Product> = mutableSetOf()
-        println("Fetching products for url: $url")
+    fun fetchProductsFromUrl(url: String, isSearch: Boolean) : MutableSet<Product> {
+        var products : MutableSet<Product> = mutableSetOf<Product>()
+        println("--- Fetching products for url: $url ---")
         try{
             val categoryPage: Document = this.httpService.get(url, mutableListOf())
-            val itemPanels : Elements = categoryPage.select("div.item-panel")
-            itemPanels.forEach { panel ->
-                val productName : String = panel.attr("data-name")
-                val productCode : String = panel.attr("data-code")
-                val productPrice : BigDecimal =  Utils.stringToBigDecimal(panel.attr("data-price"))
-                val productUrl : String = panel.children().last().attr("[href]")
-                val productCategoryId : String = makeCategory(panel.attr("data-category"))
-                val categoryIdToUse : String? = if(productCategoryId.isNullOrBlank()) null else productCategoryId
-                val productBrandId : String = makeBrand(panel.attr("data-brand"))
-                val brandIdToUse : String? = if(productBrandId.isNullOrBlank()) null else productBrandId
-
-                val productListingId : String = ""
-
-                val existingProduct : Product = productRepository.find(name = productName)
-                val newProduct : Product = makeNewProduct(brandId = brandIdToUse, categoryId = categoryIdToUse, productName = productName,
-                                                          productPrice = productPrice, smythsCode = productCode, smythsStockCheckCode= "-1", url = productUrl)
-                val sameProductName = existingProduct.name == newProduct.name
-                val sameProductPrice = existingProduct.price == newProduct.price
-                if(existingProduct.name.isNotEmpty() && sameProductName && sameProductPrice){
-                    products.add(existingProduct)
-                } else {
-                    productRepository.create(newProduct)
-                    products.add(newProduct)
-                }
-            }
-
-
+            val parsedProducts : MutableSet<Product> = parseProductsFromHTML(categoryPage, url, isSearch)
+            products = products.union(parsedProducts).toMutableSet()
         } catch (failedRequest: HttpServiceException){
             println(failedRequest)
             addToFailedProductsUrl(url)
         }
         println("--- Finished fetching products for url: $url ---")
+        return products
+    }
+
+    /***
+     * Loads more content from a category page.
+     * @param url - Used for loading more content.
+     * @return A set of all the products.
+     */
+    private fun loadMoreProducts(url : String, isSearch : Boolean) : MutableSet<Product>{
+        val moreProducts : MutableSet<Product> = mutableSetOf()
+
+        var hasMoreResults : Boolean = true
+        var page : Int = 1
+        while(hasMoreResults){
+            val loadMoreUrl : String = "$url/load-more?q=%3AieBestsellerRating&page=$page"
+            val moreProductsPage: JSONObject = this.httpService.getJson(loadMoreUrl, mutableListOf())
+            if(moreProductsPage.has("hasMoreResults")) {
+                hasMoreResults = moreProductsPage.getBoolean("hasMoreResults")
+                if(hasMoreResults){
+                    val divs = moreProductsPage.getString("htmlContent")
+                    val productsHTMLToParse : Document = Jsoup.parse(divs)
+                    val products : MutableSet<Product> = parseProductsFromHTML(productsHTMLToParse, "", isSearch)
+                    moreProducts.addAll(products)
+                    page++
+                }
+            } else {
+                hasMoreResults = false
+            }
+        }
+        return moreProducts
+    }
+
+    /***
+     * Returns all the products from a given HTML Document
+     * @param page - The document to parse
+     * @param url - Used for loading more content.
+     * @return A set of all the products.
+     */
+    private fun parseProductsFromHTML(page: Document, url : String, isSearch : Boolean) : MutableSet<Product>{
+        var products : MutableSet<Product> = mutableSetOf()
+        val itemPanels : Elements = page.select("div.item-panel")
+        itemPanels.forEach { panel ->
+            val productName : String = panel.attr("data-name")
+            val productCode : String = panel.attr("data-code")
+            val productPrice : BigDecimal =  Utils.stringToBigDecimal(panel.attr("data-price"))
+            val productUrl : String = "${Constants.SMYTHS_BASE_URL}${panel.children().last().attr("href")}"
+            val productCategoryId : String = makeCategory(panel.attr("data-category"))
+            val categoryIdToUse : String? = if(productCategoryId.isNullOrBlank()) null else productCategoryId
+            val productBrandId : String = makeBrand(panel.attr("data-brand"))
+            val brandIdToUse : String? = if(productBrandId.isNullOrBlank()) null else productBrandId
+
+            val productListingId : String = ""
+
+            val existingProduct : Product = productRepository.find(name = productName)
+            val newProduct : Product = makeNewProduct(brandId = brandIdToUse, categoryId = categoryIdToUse, productName = productName,
+                                                      productPrice = productPrice, smythsCode = productCode, smythsStockCheckCode= "-1",
+                                                      url = productUrl)
+            val sameProductName = existingProduct.name == newProduct.name
+            val sameProductPrice = existingProduct.price == newProduct.price
+            if(existingProduct.name.isNotBlank() && sameProductName && sameProductPrice){
+                products.add(existingProduct)
+            } else if(existingProduct.name.isBlank()){
+                productRepository.create(newProduct)
+                products.add(newProduct)
+            }
+            if(url.isNotBlank() && !isSearch){
+                val moreProducts : MutableSet<Product> = loadMoreProducts(url = url, isSearch = isSearch)
+                products = products.union(moreProducts).toMutableSet()
+            }
+        }
         return products
     }
 
