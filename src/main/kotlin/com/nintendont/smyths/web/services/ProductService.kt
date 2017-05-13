@@ -17,6 +17,7 @@ import com.nintendont.smyths.utils.Utils
 import com.nintendont.smyths.utils.Utils.makeEmptyProduct
 import com.nintendont.smyths.utils.Utils.objectToString
 import com.nintendont.smyths.utils.exceptions.HttpServiceException
+import org.joda.time.DateTime
 import org.json.JSONObject
 import org.jsoup.Jsoup
 
@@ -30,6 +31,7 @@ import org.jsoup.Jsoup
     @Autowired lateinit var listTypeRepository : SmythsListTypeRepository
     @Autowired lateinit var categoryRepository : SmythsCategoryRepository
     @Autowired lateinit var linkRepository : SmythsLinkRepository
+    @Autowired lateinit var historicalProductRepository : SmythsHistoricalProductRepository
 
     /* When a product url has a product, but has failed for some reason
     * we need to store that url and try again later.
@@ -133,6 +135,7 @@ import org.jsoup.Jsoup
     fun syncAllProducts() : MutableSet<Product> {
         println("*-*-*- Started Syncing All Products -*-*-*")
         val links = this.linkRepository.findAll()
+        productRepository.deleteAll()
         val products : MutableSet<Product> = mutableSetOf<Product>()
 
         for (link in links){
@@ -244,16 +247,26 @@ import org.jsoup.Jsoup
             val productListingId : String = ""
 
             val existingProduct : Product = productRepository.find(name = productName)
-            val newProduct : Product = makeNewProduct(brandId = brandIdToUse, categoryId = categoryIdToUse, productName = productName,
-                                                      productPrice = productPrice, smythsCode = productCode, smythsStockCheckCode= "-1",
+            val newProduct : Product = makeNewProduct(brandId = brandIdToUse,
+                                                      categoryId = categoryIdToUse,
+                                                      productName = productName,
+                                                      productPrice = productPrice,
+                                                      smythsCode = productCode,
+                                                      smythsStockCheckCode= "-1",
                                                       url = productUrl)
             val sameProductName = existingProduct.name == newProduct.name
             val sameProductPrice = existingProduct.price == newProduct.price
+            var productToCommitToHistory = makeEmptyProduct()
             if(existingProduct.name.isNotBlank() && sameProductName && sameProductPrice){
                 products.add(existingProduct)
+                productToCommitToHistory = existingProduct
             } else if(existingProduct.name.isBlank()){
                 productRepository.create(newProduct)
                 products.add(newProduct)
+                productToCommitToHistory = newProduct
+            }
+            if (productToCommitToHistory.id.isNotBlank()){
+                addHistoricalRecord(productToCommitToHistory)
             }
             if(url.isNotBlank() && !isSearch){
                 val moreProducts : MutableSet<Product> = loadMoreProducts(url = url, isSearch = isSearch)
@@ -261,6 +274,23 @@ import org.jsoup.Jsoup
             }
         }
         return products
+    }
+
+    /**
+     * Adds a product to the history.
+     */
+    private fun addHistoricalRecord(product : Product) {
+        val historicalProduct = HistoricalProduct( id = makeUUID(),
+                                                   name = product.name,
+                                                   price = product.price,
+                                                   productId = product.id,
+                                                   smythsCode = product.smythsCode,
+                                                   smythsStockCheckCode = product.smythsStockCheckCode,
+                                                   categoryId = product.categoryId,
+                                                   brandId = product.brandId,
+                                                   url = product.url,
+                                                   date = DateTime.now() )
+        historicalProductRepository.create(historicalProduct)
     }
 
     /**

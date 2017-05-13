@@ -17,6 +17,7 @@ open class AppConfig {
     @Bean open fun locationService() = LocationService()
     @Bean open fun jobService() = JobService()
     @Bean open fun httpService() = HttpService()
+    @Bean open fun historyService() = HistoryService()
 
     /**
      * Repository Beans
@@ -28,4 +29,5 @@ open class AppConfig {
     @Bean open fun linkRepository() = SmythsLinkRepository()
     @Bean open fun locationRepository() = SmythsLocationRepository()
     @Bean open fun openingsRepository() = SmythsOpeningsRepository()
+    @Bean open fun historicalProductRepository() = SmythsHistoricalProductRepository()
 }

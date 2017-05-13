@@ -13,6 +13,19 @@ object Products : Table() {
     var url = text("url")
 }
 
+object HistoricalProducts : Table() {
+    var id = text("id").primaryKey()
+    var productId = text("productId") references Products.id
+    var smythsCode = long("smythsCode")
+    var smythsStockCheckCode = long("smythsStockCheckCode").nullable()
+    var name = varchar("name", 400) // changed to varchar for 'LIKE'
+    var price = decimal("price", 10, 2)
+    var categoryId = (text("categoryId") references Categories.id).nullable()
+    var brandId = (text("brandId") references Brands.id).nullable()
+    var url = text("url")
+    var dateCreated = date("dateCreated")
+}
+
 object Categories : Table() {
     var id = text("id").primaryKey()
     var name = text("name")

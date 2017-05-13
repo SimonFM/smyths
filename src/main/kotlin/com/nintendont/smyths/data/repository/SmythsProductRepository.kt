@@ -25,7 +25,7 @@ open class SmythsProductRepository : ProductRepository{
     }
 
     override fun update(product: Product): Product {
-        val query : Int = Products.update({Products.smythsCode.eq(product.smythsCode)} , body = {
+        val query : Int = Products.update({Products.smythsCode eq product.smythsCode } , body = {
             it[smythsCode] = product.smythsCode
             it[smythsStockCheckCode] = product.smythsStockCheckCode
             it[name] = product.name

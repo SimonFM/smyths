@@ -22,6 +22,7 @@
     <bean id="catalogueController" class="com.nintendont.smyths.web.controllers.CatalogueController"/>
     <bean id="productController" class="com.nintendont.smyths.web.controllers.ProductController"/>
     <bean id="locationController" class="com.nintendont.smyths.web.controllers.LocationController"/>
+    <bean id="historyController" class="com.nintendont.smyths.web.controllers.HistoryController"/>
 
     <!--Applications-->
     <bean id="application" class="com.nintendont.smyths.app.SmythsApp"/>
