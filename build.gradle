@@ -17,6 +17,7 @@ buildscript {
         geo_json = '1.1'
         bouncy_castle_version = '1.56'
         docker = '1.2'
+        spek_version = '1.1.1'
     }
     repositories {
         mavenCentral()
@@ -84,6 +85,7 @@ dependencies {
     compile "org.bouncycastle:bcprov-jdk15on:$bouncy_castle_version"
 
     // Test Things
+    compile "org.jetbrains.spek:spek-api:$spek_version"
     testCompile "org.springframework.boot:spring-boot-starter-test"
     testCompile "org.springframework.restdocs:spring-restdocs-mockmvc:1.1.1.RELEASE"
 }
