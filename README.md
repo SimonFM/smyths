@@ -2,6 +2,8 @@
 
 This project is aimed at creating an open API for syncing the projects found on the Irish toy retailer [Smyths Toys](https://www.smythstoys.com/). I started this as a hobby and hope to one day migrate it to a production level environment for "real" users. 
 
+I am using IntelliJ to develop this and should be easily imported from existing projects via the build.gradle file or through cloning this repo directly.
+
 ### Features Implemented
 * Syncing of products from the smyths website 
     * Over 6000 as of 25/05/2017
